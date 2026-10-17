@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Interactive generative audio-reactive mandala artwork with polyrhythmic frequency bands." />
+  <title>Generative Sonic Mandala</title>
+
+  <!--
+    Google Fonts loaded as <link> tags instead of CSS @import.
+    <link> tags are fetched in parallel with HTML parsing; @import blocks CSSOM construction.
+    The CSS variable fallback chain (Google Sans Flex → Google Sans → sans-serif) ensures
+    the app works identically offline without any layout shift.
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,300..700;1,300..700&family=Google+Sans+Code:ital,wght,MONO@0,300..700,0..1;1,300..700,0..1&display=swap" />
+
+  <!-- Theme & viewport height init: runs before body paint to prevent FOUC / theme flash -->
+  <script>
+    (function () {
+      function setAppHeight() {
+        document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
+      }
+      setAppHeight();
+      window.addEventListener("resize", setAppHeight, { passive: true });
+      window.addEventListener("orientationchange", setAppHeight, { passive: true });
+
+      var saved = localStorage.getItem("mandala_theme") || "system";
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var effective = saved === "system" ? (prefersDark ? "dark" : "light") : saved;
+      document.documentElement.setAttribute("data-theme", effective);
+      document.documentElement.setAttribute("data-theme-setting", saved);
+    })();
+  </script>
+
+  <!-- External Stylesheet (relative to src/ document root) -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Application Logic (relative to src/ document root) -->
+  <script src="js/app.js" defer></script>
+</head>
+
+<body>
+  <div class="widget-container">
+    <div class="widget-header">
+      <div class="widget-header-content">
+        <div>
+          <!-- Standalone page single h1 -->
+          <h1 class="widget-title">Generative Sonic Mandala</h1>
+          <p class="widget-subtitle">Radial wave-field &amp; polyrhythmic harmonic landscape</p>
+        </div>
+        <div class="widget-header-actions">
+          <button id="audioBtn" type="button" class="hdr-btn"
+            aria-label="Toggle microphone input for audio-reactive mode">
+            Enable Mic
+          </button>
+          <button id="exportBtn" type="button" class="hdr-btn"
+            aria-label="Export current mandala frame as a PNG image">
+            Export PNG
+          </button>
+          <button id="themeBtn" type="button" class="hdr-btn"
+            title="Theme: System (click to switch mode)"
+            aria-label="Theme: System. Click to cycle theme.">
+            <span id="themeIcon" style="display: inline-flex; align-items: center; width: 14px; height: 14px;"></span>
+            <span id="themeLabel">System</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewport-container" id="viewportWrapper">
+      <!--
+        role="img" + aria-label so screen readers identify the canvas.
+        tabindex="0" allows keyboard focus for shortcut keys.
+      -->
+      <canvas id="mandalaCanvas" tabindex="0"
+        role="img"
+        aria-label="Generative sonic mandala — interactive radial waveform visualization. Click or tap to emit an acoustic impulse, hover to inspect frequency bands.">
+      </canvas>
+      <div id="freqTag" class="canvas-overlay-tag" style="opacity: 0" aria-hidden="true"></div>
+    </div>
+
+    <div class="control-deck" id="controlDeck">
+      <div class="control-deck-header" id="deckHeader">
+        <span class="control-deck-title">Control Deck</span>
+        <!-- aria-controls links button to its controlled region -->
+        <button class="control-deck-toggle" type="button"
+          aria-expanded="true" aria-controls="deckBody"
+          aria-label="Toggle control panel visibility">
+          <span id="toggleText">Hide</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="control-deck-body" id="deckBody">
+        <div class="control-grid">
+          <div class="control-item">
+            <label class="control-label" for="genreSelect">Genre Focus</label>
+            <select id="genreSelect" class="lumi-select" data-key="genre"
+              aria-label="Select frequency band genre focus">
+              <option value="all" selected="">Full Polyphony (All)</option>
+              <option value="metal">Progressive Metal</option>
+              <option value="rock">Alternative &amp; Heavy Rock</option>
+              <option value="pop">Kinetic Pop</option>
+              <option value="sub">Sub-Bass &amp; Low-End</option>
+              <option value="ambient">Ambient Soundscape</option>
+              <option value="synth">Synthwave</option>
+              <option value="dnb">Drum &amp; Bass</option>
+            </select>
+          </div>
+
+          <div class="control-item">
+            <label class="control-label" for="complexitySlider">Harmonic Steps</label>
+            <div class="lumi-slider-container">
+              <!--
+                aria-valuemin/max/now/text provide semantic slider state
+                for screen readers, updated live in InteractionCtrl.
+              -->
+              <input type="range" id="complexitySlider" class="lumi-slider" data-key="complexity"
+                min="4" max="24" value="12"
+                style="--progress: 40%"
+                aria-valuemin="4" aria-valuemax="24" aria-valuenow="12"
+                aria-valuetext="12 harmonic steps" />
+              <div id="complexitySlider-val" class="lumi-slider-value" aria-hidden="true">12</div>
+            </div>
+          </div>
+
+          <div class="control-item">
+            <label class="control-label" for="resonanceSlider">Turbulence</label>
+            <div class="lumi-slider-container">
+              <input type="range" id="resonanceSlider" class="lumi-slider" data-key="resonance"
+                min="10" max="100" value="45"
+                style="--progress: 38.8888%"
+                aria-valuemin="10" aria-valuemax="100" aria-valuenow="45"
+                aria-valuetext="45% turbulence" />
+              <div id="resonanceSlider-val" class="lumi-slider-value" aria-hidden="true">45</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
