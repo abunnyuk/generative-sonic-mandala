@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Interactive generative audio-reactive mandala artwork with polyrhythmic frequency bands." />
   <title>Generative Sonic Mandala</title>
 
@@ -17,9 +17,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,300..700;1,300..700&family=Google+Sans+Code:ital,wght,MONO@0,300..700,0..1;1,300..700,0..1&display=swap" />
 
-  <!-- Theme init: runs before body paint to prevent flash of wrong theme -->
+  <!-- Theme & viewport height init: runs before body paint -->
   <script>
     (function () {
+      function setAppHeight() {
+        document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
+      }
+      setAppHeight();
+      window.addEventListener("resize", setAppHeight, { passive: true });
+      window.addEventListener("orientationchange", setAppHeight, { passive: true });
+
       var saved = localStorage.getItem("mandala_theme") || "system";
       var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       var effective = saved === "system" ? (prefersDark ? "dark" : "light") : saved;
@@ -120,18 +127,25 @@
     body {
       margin: 0;
       padding: 0;
-      overflow-y: hidden;
+      overflow: hidden;
       font-family: var(--ff-sans, sans-serif);
       background: var(--body-bg, #0f0f0f);
       color: var(--on-surface, #e0e0e0);
-      width: 100vw;
+      width: 100%;
+      height: 100%;
       height: 100vh;
+      height: var(--app-height, 100dvh);
+      height: 100dvh;
     }
 
     .widget-container {
       width: 100%;
       height: 100%;
       padding: var(--lumi-sys-spacing--m, 12px);
+      padding-top: max(var(--lumi-sys-spacing--m, 12px), env(safe-area-inset-top, 0px));
+      padding-bottom: max(var(--lumi-sys-spacing--m, 12px), env(safe-area-inset-bottom, 0px));
+      padding-left: max(var(--lumi-sys-spacing--m, 12px), env(safe-area-inset-left, 0px));
+      padding-right: max(var(--lumi-sys-spacing--m, 12px), env(safe-area-inset-right, 0px));
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -142,6 +156,20 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .widget-header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .widget-header-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .widget-title {
@@ -160,7 +188,8 @@
     .viewport-container {
       position: relative;
       width: 100%;
-      flex-grow: 1;
+      flex: 1 1 0;
+      min-height: 0;
       overflow: hidden;
       border-radius: var(--lumi-sys-shape--medium, 12px);
       background: var(--surface-dim, #141414);
@@ -236,6 +265,8 @@
       justify-content: space-between;
       align-items: center;
       padding: 10px 16px;
+      min-height: 44px;
+      box-sizing: border-box;
       cursor: pointer;
       user-select: none;
     }
@@ -278,7 +309,8 @@
 
     .control-deck-body {
       padding: 0 16px 16px 16px;
-      max-height: 200px;
+      max-height: min(320px, 45vh);
+      overflow-y: auto;
       opacity: 1;
       transition:
         max-height 0.25s ease-out,
@@ -291,7 +323,30 @@
       opacity: 0;
       padding-top: 0;
       padding-bottom: 0;
+      overflow: hidden;
       pointer-events: none;
+    }
+
+    /* Small screens / mobile responsiveness */
+    @media (max-width: 640px) {
+      .widget-header-content {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .widget-header-actions {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .widget-title {
+        font-size: 18px;
+      }
+      .widget-subtitle {
+        font-size: 11px;
+      }
+      .hdr-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+      }
     }
 
     /* ============================================================
@@ -423,13 +478,13 @@
 <body>
   <div class="widget-container">
     <div class="widget-header">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+      <div class="widget-header-content">
         <div>
           <!-- C5 FIX: h2 → h1 (standalone page should have a single h1) -->
           <h1 class="widget-title">Generative Sonic Mandala</h1>
           <p class="widget-subtitle">Radial wave-field &amp; polyrhythmic harmonic landscape</p>
         </div>
-        <div style="display: flex; gap: 8px">
+        <div class="widget-header-actions">
           <!-- C4 FIX: All inline style="" replaced with .hdr-btn class -->
           <button id="audioBtn" type="button" class="hdr-btn"
             aria-label="Toggle microphone input for audio-reactive mode">
@@ -1190,6 +1245,9 @@
           }
           _dpr = window.devicePixelRatio || 1;
           _resizeCanvas();
+          if (typeof InteractionCtrl !== "undefined" && InteractionCtrl.invalidateRect) {
+            InteractionCtrl.invalidateRect();
+          }
         });
         ro.observe(_canvas.parentElement);
 
@@ -1294,6 +1352,10 @@
             const collapsed = deck.classList.toggle("is-collapsed");
             if (toggleBtn)  toggleBtn.setAttribute("aria-expanded", String(!collapsed));
             if (toggleText) toggleText.textContent = collapsed ? "Show" : "Hide";
+            _rectDirty = true;
+          });
+          deck.addEventListener("transitionend", () => {
+            _rectDirty = true;
           });
         }
 
@@ -1338,7 +1400,7 @@
         });
       }
 
-      return { init, mousePos };
+      return { init, mousePos, invalidateRect: () => { _rectDirty = true; } };
     })();
 
     // ============================================================
