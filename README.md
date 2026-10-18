@@ -10,7 +10,7 @@ An interactive, audio-reactive radial waveform visualizer built with HTML5 Canva
 - **Interactive Control Deck**: Fine-tune harmonic steps and turbulence, switch genre focus, and trigger acoustic ripples via click or tap.
 - **Snapshot Export**: Export crisp high-resolution PNG captures directly from the canvas.
 - **Theme Support & Accessibility**: Dark, Light, and System themes, `prefers-reduced-motion` compliance, and full ARIA semantics.
-- **Zero Dependencies**: Lightweight, single-file vanilla JavaScript, CSS, and HTML with no build tools, bundlers, or npm packages required.
+- **Zero Dependencies**: Lightweight vanilla JavaScript, CSS, and HTML with no build tools, bundlers, or npm packages required. Organized cleanly with source files in `src/`.
 
 ## Quick Start
 
@@ -18,21 +18,35 @@ Modern browsers require a secure origin (`localhost` or `https://`) to grant mic
 
 ### 1. Serve Locally
 
-Run any static HTTP server from the repository root:
+Run any static HTTP server with `src/` as the document root:
 
 ```bash
-# Python 3
-python3 -m http.server 8000
+# Node.js
+npx serve src
 
-# or Node.js
-npx serve .
+# or Python 3
+python3 -m http.server 8000 --directory src
 ```
 
 ### 2. Open in Browser
 
 Navigate to `http://localhost:8000` (or the port provided by your server).
 
-> **Note**: You can also open `index.html` directly as a local file (`file://`) to run the generative visualizer without microphone access.
+> **Note**: You can also open `src/index.html` directly as a local file (`file://`) to run the generative visualizer without microphone access.
+
+## Project Structure
+
+```text
+├── LICENSE
+├── README.md
+└── src/
+    ├── assets/       # Static media assets & icons
+    ├── css/
+    │   └── style.css # Stylesheets, themes, & design tokens
+    ├── js/
+    │   └── app.js    # Canvas rendering, Web Audio FFT, & interactions
+    └── index.html    # Application entry point
+```
 
 ## Controls & Keyboard Shortcuts
 
