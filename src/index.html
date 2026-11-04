@@ -4,7 +4,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="Interactive generative audio-reactive mandala artwork with polyrhythmic frequency bands." />
+  <meta name="theme-color" content="#000000" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="description"
+    content="Interactive generative audio-reactive mandala artwork with polyrhythmic frequency bands." />
   <title>Generative Sonic Mandala</title>
 
   <!--
@@ -15,7 +18,8 @@
   -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,300..700;1,300..700&family=Google+Sans+Code:ital,wght,MONO@0,300..700,0..1;1,300..700,0..1&display=swap" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,300..700;1,300..700&family=Google+Sans+Code:ital,wght,MONO@0,300..700,0..1;1,300..700,0..1&display=swap" />
 
   <!-- Theme & viewport height init: runs before body paint to prevent FOUC / theme flash -->
   <script>
@@ -27,7 +31,7 @@
       window.addEventListener("resize", setAppHeight, { passive: true });
       window.addEventListener("orientationchange", setAppHeight, { passive: true });
 
-      var saved = localStorage.getItem("mandala_theme") || "system";
+      var saved = localStorage.getItem("mandala_theme") || "dark";
       var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       var effective = saved === "system" ? (prefersDark ? "dark" : "light") : saved;
       document.documentElement.setAttribute("data-theme", effective);
@@ -44,7 +48,7 @@
 
 <body>
   <div class="widget-container">
-    <div class="widget-header">
+    <div class="widget-header hud" id="hudHeader">
       <div class="widget-header-content">
         <div>
           <!-- Standalone page single h1 -->
@@ -52,16 +56,18 @@
           <p class="widget-subtitle">Radial wave-field &amp; polyrhythmic harmonic landscape</p>
         </div>
         <div class="widget-header-actions">
+          <button id="playPauseBtn" type="button" class="hdr-btn" aria-pressed="false"
+            aria-label="Pause the visualiser animation">
+            Pause
+          </button>
           <button id="audioBtn" type="button" class="hdr-btn"
             aria-label="Toggle microphone input for audio-reactive mode">
             Enable Mic
           </button>
-          <button id="exportBtn" type="button" class="hdr-btn"
-            aria-label="Export current mandala frame as a PNG image">
+          <button id="exportBtn" type="button" class="hdr-btn" aria-label="Export current mandala frame as a PNG image">
             Export PNG
           </button>
-          <button id="themeBtn" type="button" class="hdr-btn"
-            title="Theme: System (click to switch mode)"
+          <button id="themeBtn" type="button" class="hdr-btn" title="Theme: System (click to switch mode)"
             aria-label="Theme: System. Click to cycle theme.">
             <span id="themeIcon" style="display: inline-flex; align-items: center; width: 14px; height: 14px;"></span>
             <span id="themeLabel">System</span>
@@ -73,25 +79,23 @@
     <div class="viewport-container" id="viewportWrapper">
       <!--
         role="img" + aria-label so screen readers identify the canvas.
-        tabindex="0" allows keyboard focus for shortcut keys.
+        tabindex="-1": the canvas is never a focus stop; keys are handled globally by HudCtrl.
       -->
-      <canvas id="mandalaCanvas" tabindex="0"
-        role="img"
+      <canvas id="mandalaCanvas" tabindex="-1" role="img"
         aria-label="Generative sonic mandala — interactive radial waveform visualization. Click or tap to emit an acoustic impulse, hover to inspect frequency bands.">
       </canvas>
       <div id="freqTag" class="canvas-overlay-tag" style="opacity: 0" aria-hidden="true"></div>
     </div>
 
-    <div class="control-deck" id="controlDeck">
+    <div class="control-deck hud" id="controlDeck">
       <div class="control-deck-header" id="deckHeader">
         <span class="control-deck-title">Control Deck</span>
         <!-- aria-controls links button to its controlled region -->
-        <button class="control-deck-toggle" type="button"
-          aria-expanded="true" aria-controls="deckBody"
+        <button class="control-deck-toggle" type="button" aria-expanded="true" aria-controls="deckBody"
           aria-label="Toggle control panel visibility">
           <span id="toggleText">Hide</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
@@ -121,10 +125,8 @@
                 aria-valuemin/max/now/text provide semantic slider state
                 for screen readers, updated live in InteractionCtrl.
               -->
-              <input type="range" id="complexitySlider" class="lumi-slider" data-key="complexity"
-                min="4" max="24" value="12"
-                style="--progress: 40%"
-                aria-valuemin="4" aria-valuemax="24" aria-valuenow="12"
+              <input type="range" id="complexitySlider" class="lumi-slider" data-key="complexity" min="4" max="24"
+                value="12" style="--progress: 40%" aria-valuemin="4" aria-valuemax="24" aria-valuenow="12"
                 aria-valuetext="12 harmonic steps" />
               <div id="complexitySlider-val" class="lumi-slider-value" aria-hidden="true">12</div>
             </div>
@@ -133,10 +135,8 @@
           <div class="control-item">
             <label class="control-label" for="resonanceSlider">Turbulence</label>
             <div class="lumi-slider-container">
-              <input type="range" id="resonanceSlider" class="lumi-slider" data-key="resonance"
-                min="10" max="100" value="45"
-                style="--progress: 38.8888%"
-                aria-valuemin="10" aria-valuemax="100" aria-valuenow="45"
+              <input type="range" id="resonanceSlider" class="lumi-slider" data-key="resonance" min="10" max="100"
+                value="45" style="--progress: 38.8888%" aria-valuemin="10" aria-valuemax="100" aria-valuenow="45"
                 aria-valuetext="45% turbulence" />
               <div id="resonanceSlider-val" class="lumi-slider-value" aria-hidden="true">45</div>
             </div>

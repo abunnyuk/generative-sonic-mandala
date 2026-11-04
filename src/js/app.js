@@ -5,12 +5,12 @@
 // ============================================================
 const THEME_STORAGE_KEY = "mandala_theme";
 const THEMES = ["system", "light", "dark"];
-let currentThemeMode = localStorage.getItem(THEME_STORAGE_KEY) || "system";
+let currentThemeMode = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
 
 const THEME_ICONS = {
   system: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
-  light:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
-  dark:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+  light: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  dark: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
 };
 
 function getSystemTheme() {
@@ -30,17 +30,17 @@ function applyTheme(mode) {
     document.body.classList.toggle("light-mode", effective === "light");
   }
 
-  const themeBtn  = document.getElementById("themeBtn");
-  const iconEl    = document.getElementById("themeIcon");
-  const labelEl   = document.getElementById("themeLabel");
+  const themeBtn = document.getElementById("themeBtn");
+  const iconEl = document.getElementById("themeIcon");
+  const labelEl = document.getElementById("themeLabel");
 
-  if (iconEl)  iconEl.innerHTML  = THEME_ICONS[mode] || THEME_ICONS.system;
+  if (iconEl) iconEl.innerHTML = THEME_ICONS[mode] || THEME_ICONS.system;
   if (labelEl) labelEl.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
   if (themeBtn) {
-    const nextMode  = THEMES[(THEMES.indexOf(mode) + 1) % THEMES.length];
+    const nextMode = THEMES[(THEMES.indexOf(mode) + 1) % THEMES.length];
     const nextTitle = nextMode.charAt(0).toUpperCase() + nextMode.slice(1);
-    const curTitle  = mode.charAt(0).toUpperCase() + mode.slice(1);
-    themeBtn.setAttribute("title",      `Theme: ${curTitle} (click to switch to ${nextTitle})`);
+    const curTitle = mode.charAt(0).toUpperCase() + mode.slice(1);
+    themeBtn.setAttribute("title", `Theme: ${curTitle} (click to switch to ${nextTitle})`);
     themeBtn.setAttribute("aria-label", `Theme: ${mode}. Click to cycle to ${nextTitle}.`);
   }
 
@@ -77,19 +77,19 @@ function getCssVar(name) {
 // FREQUENCY BAND DATA
 // ============================================================
 const FREQUENCY_BANDS = [
-  { id: "metal",   name: "Progressive Metal",        baseFrequency: 432, polyrhythmRatio: 7/8, harmonics: 12, hueRange: [260, 290], particleCount: 350, waveForm: "logarithmic_spiral", energy: 0.88, ratioText: "7/8"  },
-  { id: "rock",    name: "Alternative & Heavy Rock", baseFrequency: 220, polyrhythmRatio: 4/4, harmonics:  8, hueRange: [ 10,  35], particleCount: 260, waveForm: "sawtooth_crest",     energy: 0.82, ratioText: "4/4"  },
-  { id: "pop",     name: "Kinetic Pop",              baseFrequency: 880, polyrhythmRatio: 3/4, harmonics: 16, hueRange: [320, 350], particleCount: 420, waveForm: "prismatic_sine",      energy: 0.95, ratioText: "3/4"  },
-  { id: "sub",     name: "Sub-Bass & Low-End",       baseFrequency:  55, polyrhythmRatio: 1/1, harmonics:  4, hueRange: [175, 210], particleCount: 180, waveForm: "sub_resonance",       energy: 0.74, ratioText: "1/1"  },
-  { id: "ambient", name: "Ambient Soundscape",       baseFrequency: 110, polyrhythmRatio: 2/4, harmonics:  6, hueRange: [200, 240], particleCount: 200, waveForm: "sub_resonance",       energy: 0.40, ratioText: "2/4"  },
-  { id: "synth",   name: "Synthwave",                baseFrequency: 330, polyrhythmRatio: 4/4, harmonics: 14, hueRange: [290, 320], particleCount: 300, waveForm: "sawtooth_crest",     energy: 0.85, ratioText: "4/4"  },
-  { id: "dnb",     name: "Drum & Bass",              baseFrequency: 175, polyrhythmRatio: 5/4, harmonics: 24, hueRange: [ 40,  70], particleCount: 450, waveForm: "prismatic_sine",      energy: 1.00, ratioText: "5/4"  },
+  { id: "metal", name: "Progressive Metal", baseFrequency: 432, polyrhythmRatio: 7 / 8, harmonics: 12, hueRange: [260, 290], particleCount: 350, waveForm: "logarithmic_spiral", energy: 0.88, ratioText: "7/8" },
+  { id: "rock", name: "Alternative & Heavy Rock", baseFrequency: 220, polyrhythmRatio: 4 / 4, harmonics: 8, hueRange: [10, 35], particleCount: 260, waveForm: "sawtooth_crest", energy: 0.82, ratioText: "4/4" },
+  { id: "pop", name: "Kinetic Pop", baseFrequency: 880, polyrhythmRatio: 3 / 4, harmonics: 16, hueRange: [320, 350], particleCount: 420, waveForm: "prismatic_sine", energy: 0.95, ratioText: "3/4" },
+  { id: "sub", name: "Sub-Bass & Low-End", baseFrequency: 55, polyrhythmRatio: 1 / 1, harmonics: 4, hueRange: [175, 210], particleCount: 180, waveForm: "sub_resonance", energy: 0.74, ratioText: "1/1" },
+  { id: "ambient", name: "Ambient Soundscape", baseFrequency: 110, polyrhythmRatio: 2 / 4, harmonics: 6, hueRange: [200, 240], particleCount: 200, waveForm: "sub_resonance", energy: 0.40, ratioText: "2/4" },
+  { id: "synth", name: "Synthwave", baseFrequency: 330, polyrhythmRatio: 4 / 4, harmonics: 14, hueRange: [290, 320], particleCount: 300, waveForm: "sawtooth_crest", energy: 0.85, ratioText: "4/4" },
+  { id: "dnb", name: "Drum & Bass", baseFrequency: 175, polyrhythmRatio: 5 / 4, harmonics: 24, hueRange: [40, 70], particleCount: 450, waveForm: "prismatic_sine", energy: 1.00, ratioText: "5/4" },
 ];
 
 const state = {
-  genre:      "all",
+  genre: "all",
   complexity: 12,
-  resonance:  45,
+  resonance: 45,
 };
 
 // ============================================================
@@ -101,23 +101,23 @@ const state = {
 // B5: Distinct error messages per rejection type
 // ============================================================
 const AudioEngine = (() => {
-  let _ctx      = null;
+  let _ctx = null;
   let _analyser = null;
-  let _data     = null;   // Uint8Array, reused each frame
-  let _stream   = null;
-  let _active   = false;
+  let _data = null;   // Uint8Array, reused each frame
+  let _stream = null;
+  let _active = false;
   let _enabling = false;
 
   function getFrequencyEnergy(targetHz) {
     if (!_active || !_analyser || !_data || !_ctx) return 0;
-    const nyquist  = _ctx.sampleRate / 2;
+    const nyquist = _ctx.sampleRate / 2;
     const binIndex = Math.min(
       _data.length - 1,
       Math.max(0, Math.round((targetHz / nyquist) * _data.length))
     );
-    const prev = _data[Math.max(0, binIndex - 1)]                    || 0;
-    const curr = _data[binIndex]                                       || 0;
-    const next = _data[Math.min(_data.length - 1, binIndex + 1)]      || 0;
+    const prev = _data[Math.max(0, binIndex - 1)] || 0;
+    const curr = _data[binIndex] || 0;
+    const next = _data[Math.min(_data.length - 1, binIndex + 1)] || 0;
     return (prev + curr + next) / (3 * 255);
   }
 
@@ -134,7 +134,7 @@ const AudioEngine = (() => {
     const btn = document.getElementById("audioBtn");
     try {
       _stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      _ctx    = new (window.AudioContext || window.webkitAudioContext)();
+      _ctx = new (window.AudioContext || window.webkitAudioContext)();
 
       // B3: resume covers both 'suspended' (Chrome autoplay policy) and
       //     'interrupted' (Safari when another app had audio focus)
@@ -142,29 +142,29 @@ const AudioEngine = (() => {
         await _ctx.resume();
       }
 
-      const source   = _ctx.createMediaStreamSource(_stream);
-      _analyser      = _ctx.createAnalyser();
-      _analyser.fftSize                = 512;
-      _analyser.smoothingTimeConstant  = 0.8;
+      const source = _ctx.createMediaStreamSource(_stream);
+      _analyser = _ctx.createAnalyser();
+      _analyser.fftSize = 512;
+      _analyser.smoothingTimeConstant = 0.8;
       source.connect(_analyser);
-      _data   = new Uint8Array(_analyser.frequencyBinCount);
+      _data = new Uint8Array(_analyser.frequencyBinCount);
       _active = true;
 
       if (btn) {
-        btn.textContent        = "Mic Active";
-        btn.style.color        = "#00f5d4";
-        btn.style.borderColor  = "#00f5d4";
+        btn.textContent = "Mic Active";
+        btn.style.color = "#00f5d4";
+        btn.style.borderColor = "#00f5d4";
       }
     } catch (err) {
       console.error("Microphone error:", err);
       // B5: distinguish permission denied vs hardware not found vs other
       const msg =
-        err.name === "NotAllowedError"  ? "Permission Denied" :
-        err.name === "NotFoundError"    ? "No Mic Found"      :
-        err.name === "NotReadableError" ? "Mic In Use"        : "Mic Error";
+        err.name === "NotAllowedError" ? "Permission Denied" :
+          err.name === "NotFoundError" ? "No Mic Found" :
+            err.name === "NotReadableError" ? "Mic In Use" : "Mic Error";
       if (btn) {
-        btn.textContent       = msg;
-        btn.style.color       = "";
+        btn.textContent = msg;
+        btn.style.color = "";
         btn.style.borderColor = "";
       }
     } finally {
@@ -182,21 +182,21 @@ const AudioEngine = (() => {
     if (_ctx && _ctx.state !== "closed") {
       await _ctx.close();
     }
-    _ctx      = null;
+    _ctx = null;
     _analyser = null;
-    _data     = null;
+    _data = null;
 
     const btn = document.getElementById("audioBtn");
     if (btn) {
-      btn.textContent       = "Enable Mic";
-      btn.style.color       = "";
+      btn.textContent = "Enable Mic";
+      btn.style.color = "";
       btn.style.borderColor = "";
     }
   }
 
   async function toggle() {
     if (_active) await _disable();
-    else         await _enable();
+    else await _enable();
   }
 
   /** B4: Suspend context when tab goes hidden; called from visibilitychange. */
@@ -240,24 +240,25 @@ const AudioEngine = (() => {
 // ============================================================
 const MandalaRenderer = (() => {
   let _canvas = null;
-  let _ctx    = null;
-  let _rafId  = null;
+  let _ctx = null;
+  let _rafId = null;
 
   let _particles = [];
-  let _impulses  = [];
-  let _phase     = 0;
-  let _lastTs    = 0;
+  let _impulses = [];
+  let _phase = 0;
+  let _lastTs = 0;
+  let _paused = false;
 
   // C3: Layout dimensions kept up-to-date by ResizeObserver
   let _vW = 600, _vH = 380;
   let _dpr = window.devicePixelRatio || 1;
 
   // A3/A4: Theme-derived rendering values — updated in onThemeChanged()
-  let _isLight  = false;
-  let _bgColor  = "#141414";
+  let _isLight = false;
+  let _bgColor = "#000000";
 
   // A1: Background gradient cache
-  let _bgGrad    = null;
+  let _bgGrad = null;
   let _bgGradKey = "";
   let _gradDirty = true;   // set true whenever center/size/theme changes
 
@@ -281,7 +282,7 @@ const MandalaRenderer = (() => {
     const newW = Math.floor(_vW * _dpr);
     const newH = Math.floor(_vH * _dpr);
     if (_canvas.width !== newW || _canvas.height !== newH) {
-      _canvas.width  = newW;
+      _canvas.width = newW;
       _canvas.height = newH;
       _gradDirty = true;
     }
@@ -291,8 +292,9 @@ const MandalaRenderer = (() => {
   // A3/A4: Called by applyTheme() whenever the colour scheme changes
   function onThemeChanged() {
     if (!_canvas) return;   // not yet initialised — safe to skip
-    _isLight   = document.documentElement.getAttribute("data-theme") === "light";
-    _bgColor   = getCssVar("--surface-dim") || (_isLight ? "#ffffff" : "#141414");
+    _isLight = document.documentElement.getAttribute("data-theme") === "light";
+    // Dark mode is always true black so OLED subpixels switch fully off.
+    _bgColor = _isLight ? (getCssVar("--surface-dim") || "#ffffff") : "#000000";
     _gradDirty = true;
   }
 
@@ -303,13 +305,13 @@ const MandalaRenderer = (() => {
 
     _bgGrad = _ctx.createRadialGradient(cx, cy, 5, cx, cy, maxR * 1.2);
     if (_isLight) {
-      _bgGrad.addColorStop(0,   "rgba(49, 134, 255, 0.05)");
+      _bgGrad.addColorStop(0, "rgba(49, 134, 255, 0.05)");
       _bgGrad.addColorStop(0.6, "rgba(220, 225, 235, 0.12)");
-      _bgGrad.addColorStop(1,   "rgba(255, 255, 255, 0)");
+      _bgGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
     } else {
-      _bgGrad.addColorStop(0,   "rgba(49, 134, 255, 0.08)");
-      _bgGrad.addColorStop(0.6, "rgba(15, 15, 15, 0.02)");
-      _bgGrad.addColorStop(1,   "rgba(0, 0, 0, 0)");
+      // Dark: no ambient glow (see _renderFrame) — untouched pixels stay #000.
+      _bgGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+      _bgGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     }
     _bgGradKey = key;
     _gradDirty = false;
@@ -319,12 +321,12 @@ const MandalaRenderer = (() => {
   function _initParticles() {
     _particles = [];
     const totalBands = FREQUENCY_BANDS.length;
-    const bandStep   = totalBands > 1 ? 0.72 / (totalBands - 1) : 0;
+    const bandStep = totalBands > 1 ? 0.72 / (totalBands - 1) : 0;
 
     FREQUENCY_BANDS.forEach((band, bandIdx) => {
       const count = Math.floor(band.particleCount * 0.7);
       for (let i = 0; i < count; i++) {
-        const angle    = Math.random() * Math.PI * 2;
+        const angle = Math.random() * Math.PI * 2;
         const baseTier = 0.2 + bandIdx * bandStep;
         const normDist = baseTier + (Math.random() - 0.5) * (bandStep * 0.35);
         const hue = band.hueRange[0] + Math.random() * (band.hueRange[1] - band.hueRange[0]);
@@ -332,20 +334,20 @@ const MandalaRenderer = (() => {
         const lum = 55 + Math.random() * 25;
 
         _particles.push({
-          bandId:          band.id,
-          bandIdx:         bandIdx,
-          angle:           angle,
-          baseNormDist:    normDist,
+          bandId: band.id,
+          bandIdx: bandIdx,
+          angle: angle,
+          baseNormDist: normDist,
           currentNormDist: normDist,
-          speed:           (0.002 + Math.random() * 0.004) * (bandIdx % 2 === 0 ? 1 : -1) * band.polyrhythmRatio,
-          size:            1.2 + Math.random() * 1.8 * band.energy,
-          hue:             hue,
-          sat:             sat,
-          lum:             lum,
-          alpha:           0.4 + Math.random() * 0.5,
-          seed:            Math.random() * 1000,
-          burstVelocity:   0,
-          burstAngle:      0,
+          speed: (0.002 + Math.random() * 0.004) * (bandIdx % 2 === 0 ? 1 : -1) * band.polyrhythmRatio,
+          size: 1.2 + Math.random() * 1.8 * band.energy,
+          hue: hue,
+          sat: sat,
+          lum: lum,
+          alpha: 0.4 + Math.random() * 0.5,
+          seed: Math.random() * 1000,
+          burstVelocity: 0,
+          burstAngle: 0,
           // A8: Pre-built fill string prefix; hue+sat never change per particle
           _fillBase: `hsla(${hue.toFixed(1)}, ${sat.toFixed(1)}%,`,
         });
@@ -357,15 +359,15 @@ const MandalaRenderer = (() => {
   function triggerImpulse(cx, cy) {
     _impulses.push({
       x: cx, y: cy,
-      radius:    0,
+      radius: 0,
       maxRadius: Math.max(_canvas.width, _canvas.height) * 0.8,
-      speed:     7,
-      energy:    1.0,
+      speed: 7,
+      energy: 1.0,
     });
 
     const centerX = _vW / 2;
     const centerY = _vH / 2;
-    const maxR    = Math.min(_vW, _vH) * 0.45;
+    const maxR = Math.min(_vW, _vH) * 0.45;
 
     _particles.forEach(p => {
       const px = centerX + Math.cos(p.angle) * p.currentNormDist * maxR;
@@ -375,9 +377,9 @@ const MandalaRenderer = (() => {
       // A7: Compare squared distances before committing to sqrt
       const distSq = dx * dx + dy * dy;
       if (distSq < 120 * 120) {
-        const dist       = Math.sqrt(distSq);
-        p.burstVelocity  = (120 - dist) * 0.12 * (0.8 + Math.random() * 0.4);
-        p.burstAngle     = Math.atan2(dy, dx);
+        const dist = Math.sqrt(distSq);
+        p.burstVelocity = (120 - dist) * 0.12 * (0.8 + Math.random() * 0.4);
+        p.burstAngle = Math.atan2(dy, dx);
       }
     });
   }
@@ -387,11 +389,11 @@ const MandalaRenderer = (() => {
     if (!_canvas || !_ctx) return;
 
     // C12: Delta-time, normalised to 60fps (dt60 = 1.0 at exactly 60fps)
-    const dt   = _lastTs === 0 ? 16.667 : Math.min(ts - _lastTs, 50);
-    _lastTs    = ts;
+    const dt = _lastTs === 0 ? 16.667 : Math.min(ts - _lastTs, 50);
+    _lastTs = ts;
     const dt60 = dt / (1000 / 60);
 
-    const w       = _vW, h = _vH;
+    const w = _vW, h = _vH;
     const centerX = w / 2;
     const centerY = h / 2;
     const maxRadius = Math.min(w, h) * 0.42;
@@ -402,14 +404,22 @@ const MandalaRenderer = (() => {
       return;
     }
 
-    // ── Clear ──
+    // Paused (media key / button): freeze the last frame, keep the loop alive.
+    if (_paused) {
+      _rafId = requestAnimationFrame(_renderFrame);
+      return;
+    }
+
+    // ── Clear ── (opaque #000 in dark mode; nothing is drawn over untouched areas)
     _ctx.globalCompositeOperation = "source-over";
     _ctx.fillStyle = _bgColor;
     _ctx.fillRect(0, 0, w, h);
 
-    // A1: Use cached background gradient
-    _ctx.fillStyle = _getBgGrad(centerX, centerY, maxRadius);
-    _ctx.fillRect(0, 0, w, h);
+    // A1: Use cached background gradient — light theme only; dark stays pure black
+    if (_isLight) {
+      _ctx.fillStyle = _getBgGrad(centerX, centerY, maxRadius);
+      _ctx.fillRect(0, 0, w, h);
+    }
 
     // C12: Phase advances proportional to elapsed time, modulated by C9 motion scale
     _phase += 0.015 * dt60 * _motionScale;
@@ -418,11 +428,11 @@ const MandalaRenderer = (() => {
     AudioEngine.poll();
 
     // A2: Compute activeBands once (not inside any loop)
-    const activeBands  = state.genre === "all"
+    const activeBands = state.genre === "all"
       ? FREQUENCY_BANDS
       : FREQUENCY_BANDS.filter(b => b.id === state.genre);
-    const totalActive  = activeBands.length;
-    const bandStep     = totalActive > 1 ? 0.72 / (totalActive - 1) : 0;
+    const totalActive = activeBands.length;
+    const bandStep = totalActive > 1 ? 0.72 / (totalActive - 1) : 0;
 
     // A5: One energy lookup per band, results shared by waveform + particle loops
     const energyMap = {};
@@ -430,15 +440,15 @@ const MandalaRenderer = (() => {
       energyMap[b.id] = AudioEngine.getFrequencyEnergy(b.baseFrequency);
     });
 
-    const mousePos  = InteractionCtrl.mousePos;
+    const mousePos = InteractionCtrl.mousePos;
     const complexity = state.complexity;
-    const resNorm   = state.resonance / 100;
-    const isAudio   = AudioEngine.isActive;
+    const resNorm = state.resonance / 100;
+    const isAudio = AudioEngine.isActive;
 
     _ctx.globalCompositeOperation = _isLight ? "multiply" : "screen";
 
     let hoverTagText = "";
-    let closestDist  = Infinity;
+    let closestDist = Infinity;
 
     // ── 1. Waveforms & Radial Rings ──────────────────────────
     activeBands.forEach((band, idx) => {
@@ -446,7 +456,7 @@ const MandalaRenderer = (() => {
         ? maxRadius * 0.55
         : maxRadius * (0.2 + idx * bandStep);
 
-      const liveEnergy     = energyMap[band.id];
+      const liveEnergy = energyMap[band.id];
       const effectiveEnergy = isAudio ? liveEnergy * 2.2 : band.energy;
 
       _ctx.beginPath();
@@ -459,7 +469,7 @@ const MandalaRenderer = (() => {
           rOffset = Math.sin(theta * band.harmonics + _phase * band.polyrhythmRatio) * 6 * effectiveEnergy;
         } else if (band.waveForm === "sawtooth_crest") {
           const mod = ((theta * band.harmonics) / (Math.PI * 2)) % 1;
-          rOffset   = (mod - 0.5) * 12 * effectiveEnergy;
+          rOffset = (mod - 0.5) * 12 * effectiveEnergy;
         } else if (band.waveForm === "prismatic_sine") {
           rOffset = (Math.sin(theta * complexity) + Math.cos(theta * band.harmonics * 0.5)) * 5 * effectiveEnergy;
         } else if (band.waveForm === "sub_resonance") {
@@ -477,20 +487,20 @@ const MandalaRenderer = (() => {
         if (mousePos.active) {
           const dx = mousePos.x - px;
           const dy = mousePos.y - py;
-          const d  = Math.sqrt(dx * dx + dy * dy);
+          const d = Math.sqrt(dx * dx + dy * dy);
           if (d < 110) {
             const pull = (1 - d / 110) * 22;
             px += (dx / d) * pull;
             py += (dy / d) * pull;
             if (d < closestDist) {
-              closestDist  = d;
+              closestDist = d;
               hoverTagText = `${band.name} \u2022 ${band.baseFrequency}\u202fHz [${band.ratioText}]`;
             }
           }
         }
 
         if (i === 0) _ctx.moveTo(px, py);
-        else         _ctx.lineTo(px, py);
+        else _ctx.lineTo(px, py);
       }
       _ctx.closePath();
 
@@ -519,7 +529,7 @@ const MandalaRenderer = (() => {
     _particles.forEach(p => {
       if (state.genre !== "all" && p.bandId !== state.genre) return;
 
-      const band      = FREQUENCY_BANDS[p.bandIdx];
+      const band = FREQUENCY_BANDS[p.bandIdx];
       // A5: Energy already computed — no extra getFrequencyEnergy call per particle
       const liveAudio = isAudio ? (energyMap[band.id] || 0) : 0;
 
@@ -529,14 +539,14 @@ const MandalaRenderer = (() => {
 
       if (p.burstVelocity > 0.1) {
         p.currentNormDist += p.burstVelocity * 0.002;
-        p.burstVelocity   *= 0.92;
+        p.burstVelocity *= 0.92;
       } else {
         p.currentNormDist += (p.baseNormDist - p.currentNormDist) * 0.05;
       }
 
       const audioOffset = liveAudio * 0.04 * band.energy;
-      const wobble      = Math.sin(_phase * 2 + p.seed) * 0.015 * resNorm;
-      const r           = maxRadius * (effectiveDist + wobble + audioOffset);
+      const wobble = Math.sin(_phase * 2 + p.seed) * 0.015 * resNorm;
+      const r = maxRadius * (effectiveDist + wobble + audioOffset);
 
       let px = centerX + Math.cos(p.angle) * r;
       let py = centerY + Math.sin(p.angle) * r;
@@ -544,7 +554,7 @@ const MandalaRenderer = (() => {
       if (mousePos.active) {
         const dx = mousePos.x - px;
         const dy = mousePos.y - py;
-        const d  = Math.sqrt(dx * dx + dy * dy);
+        const d = Math.sqrt(dx * dx + dy * dy);
         if (d < 90) {
           const factor = (1 - d / 90) * 16;
           px += (dx / d) * factor;
@@ -561,8 +571,8 @@ const MandalaRenderer = (() => {
       _ctx.beginPath();
       _ctx.arc(px, py, dynamicSize, 0, Math.PI * 2);
 
-      const pLum   = _isLight ? Math.max(28, p.lum * 0.5)       : p.lum;
-      const pAlpha = _isLight ? Math.min(0.9, p.alpha * 1.15)   : p.alpha;
+      const pLum = _isLight ? Math.max(28, p.lum * 0.5) : p.lum;
+      const pAlpha = _isLight ? Math.min(0.9, p.alpha * 1.15) : p.alpha;
       // A8: Only the two varying numbers are concatenated; prefix is pre-built
       _ctx.fillStyle = `${p._fillBase}${pLum.toFixed(1)}%, ${pAlpha.toFixed(2)})`;
       _ctx.fill();
@@ -592,20 +602,20 @@ const MandalaRenderer = (() => {
     // Note: core gradient changes every frame (driven by haloRadius + audio),
     //       so it cannot be cached — it is intentionally re-created here.
     const subBassLevel = isAudio ? AudioEngine.getFrequencyEnergy(55) : 0;
-    const corePulse    = (3.2 + Math.sin(_phase * 2.5) * 1.4) * (1 + subBassLevel * 2.0);
-    const haloRadius   = (26  + Math.sin(_phase * 1.5) * 4)   * (1 + subBassLevel * 1.5);
+    const corePulse = (3.2 + Math.sin(_phase * 2.5) * 1.4) * (1 + subBassLevel * 2.0);
+    const haloRadius = (26 + Math.sin(_phase * 1.5) * 4) * (1 + subBassLevel * 1.5);
 
     const coreGrad = _ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, haloRadius);
     if (_isLight) {
-      coreGrad.addColorStop(0,    "rgba(24, 24, 38, 0.7)");
+      coreGrad.addColorStop(0, "rgba(24, 24, 38, 0.7)");
       coreGrad.addColorStop(0.25, "rgba(90, 35, 170, 0.35)");
-      coreGrad.addColorStop(0.6,  "rgba(25, 90, 210, 0.15)");
-      coreGrad.addColorStop(1,    "rgba(255, 255, 255, 0)");
+      coreGrad.addColorStop(0.6, "rgba(25, 90, 210, 0.15)");
+      coreGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
     } else {
-      coreGrad.addColorStop(0,    "rgba(255, 255, 255, 0.9)");
+      coreGrad.addColorStop(0, "rgba(255, 255, 255, 0.9)");
       coreGrad.addColorStop(0.25, "rgba(157, 78, 221, 0.55)");
-      coreGrad.addColorStop(0.6,  "rgba(49, 134, 255, 0.2)");
-      coreGrad.addColorStop(1,    "rgba(0, 0, 0, 0)");
+      coreGrad.addColorStop(0.6, "rgba(49, 134, 255, 0.2)");
+      coreGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     }
     _ctx.fillStyle = coreGrad;
     _ctx.beginPath();
@@ -623,9 +633,9 @@ const MandalaRenderer = (() => {
     const tag = document.getElementById("freqTag");
     if (tag) {
       if (hoverTagText && mousePos.active) {
-        tag.textContent   = hoverTagText;
-        tag.style.left    = `${mousePos.x}px`;
-        tag.style.top     = `${mousePos.y}px`;
+        tag.textContent = hoverTagText;
+        tag.style.left = `${mousePos.x}px`;
+        tag.style.top = `${mousePos.y}px`;
         tag.style.opacity = "1";
       } else {
         tag.style.opacity = "0";
@@ -639,7 +649,7 @@ const MandalaRenderer = (() => {
   function start() {
     if (_rafId) cancelAnimationFrame(_rafId);
     _lastTs = 0;
-    _rafId  = requestAnimationFrame(_renderFrame);
+    _rafId = requestAnimationFrame(_renderFrame);
   }
 
   function stop() {
@@ -649,7 +659,8 @@ const MandalaRenderer = (() => {
   function init() {
     _canvas = document.getElementById("mandalaCanvas");
     if (!_canvas) return;
-    _ctx = _canvas.getContext("2d");
+    // alpha:false → opaque backbuffer that starts (and clears) as pure black.
+    _ctx = _canvas.getContext("2d", { alpha: false });
 
     // Seed theme cache before first paint
     onThemeChanged();
@@ -657,7 +668,7 @@ const MandalaRenderer = (() => {
     // C3: ResizeObserver — dimensions captured here, never queried inside rAF
     const ro = new ResizeObserver(entries => {
       for (const entry of entries) {
-        _vW = entry.contentRect.width  || _canvas.parentElement.clientWidth  || 600;
+        _vW = entry.contentRect.width || _canvas.parentElement.clientWidth || 600;
         _vH = entry.contentRect.height || _canvas.parentElement.clientHeight || 380;
       }
       _dpr = window.devicePixelRatio || 1;
@@ -669,8 +680,8 @@ const MandalaRenderer = (() => {
     ro.observe(_canvas.parentElement);
 
     // Seed initial dimensions synchronously
-    _vW  = _canvas.parentElement.clientWidth  || 600;
-    _vH  = _canvas.parentElement.clientHeight || 380;
+    _vW = _canvas.parentElement.clientWidth || 600;
+    _vH = _canvas.parentElement.clientHeight || 380;
     _resizeCanvas();
 
     _initParticles();
@@ -683,6 +694,8 @@ const MandalaRenderer = (() => {
     stop,
     triggerImpulse,
     onThemeChanged,
+    setPaused(p) { _paused = !!p; _lastTs = 0; return _paused; },
+    get paused() { return _paused; },
     get canvas() { return _canvas; },
   };
 })();
@@ -698,15 +711,15 @@ const InteractionCtrl = (() => {
   const mousePos = { x: -9999, y: -9999, active: false };
 
   let _cachedRect = null;
-  let _rectDirty  = true;
+  let _rectDirty = true;
   let _pDownMoved = false;
-  let _pDownX     = 0, _pDownY = 0;
+  let _pDownX = 0, _pDownY = 0;
 
   function _getRect(canvas) {
     // C2: Re-read only when the layout has changed
     if (_rectDirty || !_cachedRect) {
       _cachedRect = canvas.getBoundingClientRect();
-      _rectDirty  = false;
+      _rectDirty = false;
     }
     return _cachedRect;
   }
@@ -727,8 +740,8 @@ const InteractionCtrl = (() => {
     // ── C1: Pointer Events — covers mouse, touch, and stylus ──
     canvas.addEventListener("pointermove", e => {
       const { x, y } = _coords(e, canvas);
-      mousePos.x      = x;
-      mousePos.y      = y;
+      mousePos.x = x;
+      mousePos.y = y;
       mousePos.active = true;
       // Track significant movement to distinguish tap from drag
       const dx = x - _pDownX, dy = y - _pDownY;
@@ -760,14 +773,14 @@ const InteractionCtrl = (() => {
     });
 
     // ── Collapsible deck ──
-    const deck       = document.getElementById("controlDeck");
+    const deck = document.getElementById("controlDeck");
     const deckHeader = document.getElementById("deckHeader");
     if (deck && deckHeader) {
-      const toggleBtn  = deckHeader.querySelector(".control-deck-toggle");
+      const toggleBtn = deckHeader.querySelector(".control-deck-toggle");
       const toggleText = document.getElementById("toggleText");
       deckHeader.addEventListener("click", () => {
         const collapsed = deck.classList.toggle("is-collapsed");
-        if (toggleBtn)  toggleBtn.setAttribute("aria-expanded", String(!collapsed));
+        if (toggleBtn) toggleBtn.setAttribute("aria-expanded", String(!collapsed));
         if (toggleText) toggleText.textContent = collapsed ? "Show" : "Hide";
         _rectDirty = true;
       });
@@ -777,13 +790,14 @@ const InteractionCtrl = (() => {
     }
 
     // ── Header buttons ──
-    document.getElementById("audioBtn") ?.addEventListener("click", () => AudioEngine.toggle());
+    document.getElementById("audioBtn")?.addEventListener("click", () => AudioEngine.toggle());
     document.getElementById("exportBtn")?.addEventListener("click", _exportWallpaper);
-    document.getElementById("themeBtn") ?.addEventListener("click", cycleTheme);
+    document.getElementById("themeBtn")?.addEventListener("click", cycleTheme);
 
     // ── Keyboard shortcuts ──
     // Guard: do not intercept when user is typing inside a form control
     window.addEventListener("keydown", e => {
+      if (!HudCtrl.isVisible) return;   // hidden HUD ⇒ no hidden option can fire
       const tag = e.target.tagName;
       if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
       if (e.key === "m" || e.key === "M") AudioEngine.toggle();
@@ -821,14 +835,203 @@ const InteractionCtrl = (() => {
 })();
 
 // ============================================================
+// HUD CONTROLLER — Android TV / Google TV remote, auto-hide, focus safety
+// ============================================================
+const HudCtrl = (() => {
+  const HIDE_AFTER_MS = 4000;   // inactivity timeout
+  const INITIAL_MS = 4000;   // launch discovery window
+
+  // Android KeyEvent codes (delivered as keyCode when `key` is "Unidentified").
+  const KEYCODE = {
+    BACK: 4, DPAD_UP: 19, DPAD_DOWN: 20, DPAD_LEFT: 21, DPAD_RIGHT: 22, DPAD_CENTER: 23,
+    MEDIA_PLAY_PAUSE: 85, MEDIA_PLAY: 126, MEDIA_PAUSE: 127,
+  };
+  // DOM `key` values produced by Chrome / WebView / desktop for the same buttons.
+  const BY_KEY = {
+    ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT",
+    Enter: "CENTER", " ": "CENTER",
+    GoBack: "BACK", BrowserBack: "BACK", Escape: "BACK",
+    MediaPlayPause: "PLAY_PAUSE", MediaPlay: "PLAY", MediaPause: "PAUSE",
+  };
+  const BY_CODE = {
+    [KEYCODE.BACK]: "BACK", [KEYCODE.DPAD_UP]: "UP", [KEYCODE.DPAD_DOWN]: "DOWN",
+    [KEYCODE.DPAD_LEFT]: "LEFT", [KEYCODE.DPAD_RIGHT]: "RIGHT", [KEYCODE.DPAD_CENTER]: "CENTER",
+    [KEYCODE.MEDIA_PLAY_PAUSE]: "PLAY_PAUSE", [KEYCODE.MEDIA_PLAY]: "PLAY", [KEYCODE.MEDIA_PAUSE]: "PAUSE",
+  };
+  const FOCUSABLE = "button, select, input, [href], [tabindex]";
+
+  let _visible = true;
+  let _timer = null;
+  let _els = [];   // .hud containers
+  let _primary = null;
+
+  function classify(e) {
+    if (e.key && e.key !== "Unidentified") return BY_KEY[e.key] || null;
+    return BY_CODE[e.keyCode] || null;   // raw Android codes only when key is unknown
+  }
+
+  function _focusables() {
+    return _els
+      .flatMap(el => Array.from(el.querySelectorAll(FOCUSABLE)))
+      .filter(el =>
+        !el.disabled &&
+        !el.closest(".control-deck.is-collapsed .control-deck-body") &&
+        el.getClientRects().length > 0);
+  }
+
+  function _setFocusable(on) {
+    _els.forEach(el => {
+      el.inert = !on;
+      el.setAttribute("aria-hidden", String(!on));
+      el.querySelectorAll(FOCUSABLE).forEach(c => {
+        if (on) c.removeAttribute("tabindex");   // restore natural order
+        else c.tabIndex = -1;
+      });
+    });
+  }
+
+  function _restartTimer(ms = HIDE_AFTER_MS) {
+    clearTimeout(_timer);
+    if (_visible) _timer = setTimeout(hide, ms);
+  }
+
+  function show({ focus = false, ms = HIDE_AFTER_MS } = {}) {
+    _visible = true;
+    document.body.classList.remove("hud-hidden");
+    _setFocusable(true);
+    if (focus && _primary) _primary.focus({ preventScroll: true });
+    _restartTimer(ms);
+  }
+
+  function hide() {
+    clearTimeout(_timer);
+    _visible = false;
+    const a = document.activeElement;
+    if (a && _els.some(el => el.contains(a))) a.blur();   // keys must not reach hidden controls
+    document.body.classList.add("hud-hidden");
+    _setFocusable(false);
+  }
+
+  /** Nearest focusable in the pressed direction (spatial navigation). */
+  function _move(dir, from) {
+    const items = _focusables();
+    if (!items.length) return;
+    if (!from || !items.includes(from)) { (_primary || items[0]).focus(); return; }
+    const r = from.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let best = null, bestScore = Infinity;
+    for (const el of items) {
+      if (el === from) continue;
+      const b = el.getBoundingClientRect();
+      const dx = (b.left + b.width / 2) - cx;
+      const dy = (b.top + b.height / 2) - cy;
+      const [main, cross] =
+        dir === "RIGHT" ? [dx, Math.abs(dy)] :
+          dir === "LEFT" ? [-dx, Math.abs(dy)] :
+            dir === "DOWN" ? [dy, Math.abs(dx)] : [-dy, Math.abs(dx)];
+      if (main <= 1) continue;                 // not in that direction
+      const score = main + cross * 2;          // favour aligned targets
+      if (score < bestScore) { bestScore = score; best = el; }
+    }
+    if (best) best.focus({ preventScroll: true });
+  }
+
+  function togglePlay(force) {
+    const next = typeof force === "boolean" ? force : !MandalaRenderer.paused;
+    MandalaRenderer.setPaused(next);
+    if (_primary) {
+      _primary.textContent = next ? "Play" : "Pause";
+      _primary.setAttribute("aria-pressed", String(next));
+      _primary.setAttribute("aria-label", next ? "Resume the visualiser animation" : "Pause the visualiser animation");
+    }
+  }
+
+  /** Returns true if the BACK press was consumed (HUD was visible and is now hidden). */
+  function handleBack() {
+    if (!_visible) return false;   // let default back/exit navigation proceed
+    hide();
+    return true;
+  }
+
+  function _onKeyDown(e) {
+    const action = classify(e);
+
+    // Any key while visible counts as activity.
+    if (_visible) _restartTimer();
+
+    if (!action) return;
+
+    if (action === "BACK") {
+      if (handleBack()) { e.preventDefault(); e.stopImmediatePropagation(); }
+      return;   // hidden: do NOT preventDefault → default back/exit
+    }
+
+    if (action === "PLAY_PAUSE" || action === "PLAY" || action === "PAUSE") {
+      e.preventDefault();
+      togglePlay(action === "PLAY_PAUSE" ? undefined : action === "PAUSE");
+      show();            // brief confirmation, no focus change
+      return;
+    }
+
+    // D-pad (UP/DOWN/LEFT/RIGHT/CENTER)
+    if (!_visible) {
+      // First press only wakes the HUD; it must not change any setting.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!e.repeat) show({ focus: true });
+      return;
+    }
+
+    const cur = _els.some(el => el.contains(document.activeElement)) ? document.activeElement : null;
+
+    if (action === "CENTER") {
+      if (!cur) { e.preventDefault(); _primary?.focus(); return; }
+      // Enter/Space already click natively; raw DPAD_CENTER (key "Unidentified") does not.
+      if (e.key === "Unidentified" && cur.tagName !== "INPUT") { e.preventDefault(); cur.click(); }
+      return;
+    }
+
+    // Sliders keep native Left/Right (adjust value); everything else is spatial.
+    if (cur && cur.type === "range" && (action === "LEFT" || action === "RIGHT")) return;
+    e.preventDefault();
+    _move(action, cur);
+  }
+
+  function init() {
+    _els = Array.from(document.querySelectorAll(".hud"));
+    _primary = document.getElementById("playPauseBtn");
+
+    _primary?.addEventListener("click", () => togglePlay());
+
+    // Capture phase: run before app/shortcut handlers and native control behaviour.
+    window.addEventListener("keydown", _onKeyDown, true);
+
+    // Pointer/focus activity keeps (or wakes) the HUD for mouse/touch users.
+    const activity = () => (_visible ? _restartTimer() : show());
+    window.addEventListener("pointerdown", activity, { passive: true });
+    window.addEventListener("pointermove", e => { if (e.pointerType === "mouse") activity(); }, { passive: true });
+    document.addEventListener("input", () => _restartTimer(), true);
+    document.addEventListener("change", () => _restartTimer(), true);
+
+    // Hook for a native Android wrapper: onBackPressed → if (!window.mandalaHandleBack()) finish();
+    window.mandalaHandleBack = handleBack;
+
+    // Launch: reveal briefly so users discover remote navigation, then fade out.
+    show({ ms: INITIAL_MS });
+  }
+
+  return { init, show, hide, handleBack, get isVisible() { return _visible; } };
+})();
+
+// ============================================================
 // EXPORT
 // ============================================================
 function _exportWallpaper() {
   const canvas = MandalaRenderer.canvas;
   if (!canvas) return;
-  const link     = document.createElement("a");
-  link.download  = `sonic-mandala-${state.genre}-${Date.now()}.png`;
-  link.href      = canvas.toDataURL("image/png");
+  const link = document.createElement("a");
+  link.download = `sonic-mandala-${state.genre}-${Date.now()}.png`;
+  link.href = canvas.toDataURL("image/png");
   link.click();
 }
 
@@ -854,7 +1057,7 @@ function normalizeSlider(r) {
   if (!r || r.type !== "range") return;
   const mn = parseFloat(r.min || "0");
   const mx = parseFloat(r.max || "100");
-  let v    = parseFloat(r.value);
+  let v = parseFloat(r.value);
   if (isNaN(v)) v = (mn + mx) / 2;
   const p = mx > mn ? ((v - mn) / (mx - mn)) * 100 : 50;
   r.style.setProperty("--progress", p + "%");
@@ -871,6 +1074,7 @@ function initApp() {
   document.querySelectorAll('input[type="range"], .lumi-slider').forEach(normalizeSlider);
   MandalaRenderer.init();
   InteractionCtrl.init();
+  HudCtrl.init();
   applyTheme(currentThemeMode);
   MandalaRenderer.start();
 }
