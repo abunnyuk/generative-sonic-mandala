@@ -1,6 +1,7 @@
 # Generative Sonic Mandala
 
 [![CodeQL](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/github-code-scanning/codeql)
+[![Publish Static Website](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/publish.yml/badge.svg)](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/publish.yml)
 
 An interactive, audio-reactive radial waveform visualizer built with HTML5 Canvas and the Web Audio API. It transforms microphone input and mathematical harmonic ratios into dynamic polyrhythmic mandalas with real-time particle dynamics.
 
