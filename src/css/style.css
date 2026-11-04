@@ -5,18 +5,20 @@
   --ff-sans: "Google Sans Flex", "Google Sans Text", "Google Sans", sans-serif;
   --ff-mono: "Google Sans Code", "Google Sans Mono", monospace;
   --lumi-sys-spacing--xs: 4px;
-  --lumi-sys-spacing--s:  8px;
-  --lumi-sys-spacing--m:  12px;
-  --lumi-sys-spacing--l:  16px;
+  --lumi-sys-spacing--s: 8px;
+  --lumi-sys-spacing--m: 12px;
+  --lumi-sys-spacing--l: 16px;
   --lumi-sys-shape--medium: 12px;
-  --lumi-sys-shape--full:   999px;
+  --lumi-sys-shape--full: 999px;
   /* C9 FIX: Motion scale token — set to 0.15 under reduced-motion preference */
   --motion-scale: 1.0;
 }
 
 /* C9 FIX: Honour OS-level prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  :root { --motion-scale: 0.15; }
+  :root {
+    --motion-scale: 0.15;
+  }
 }
 
 :root,
@@ -133,8 +135,14 @@ body {
   left: max(5vw, env(safe-area-inset-left, 0px));
   right: max(5vw, env(safe-area-inset-right, 0px));
 }
-.widget-header.hud { top: max(4vh, env(safe-area-inset-top, 0px)); }
-.control-deck.hud  { bottom: max(4vh, env(safe-area-inset-bottom, 0px)); }
+
+.widget-header.hud {
+  top: max(4vh, env(safe-area-inset-top, 0px));
+}
+
+.control-deck.hud {
+  bottom: max(4vh, env(safe-area-inset-bottom, 0px));
+}
 
 /* Auto-hide: fade out, then visibility:hidden removes controls from the tab order
    and hit testing (HudCtrl also sets inert + tabindex=-1). */
@@ -143,15 +151,24 @@ body {
   visibility: visible;
   transition: opacity 0.35s ease-out, visibility 0s linear 0s;
 }
+
 body.hud-hidden .hud {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.9s ease-in-out, visibility 0s linear 0.9s;
 }
-body.hud-hidden canvas#mandalaCanvas { cursor: none; }
+
+body.hud-hidden canvas#mandalaCanvas {
+  cursor: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hud, body.hud-hidden .hud { transition-duration: 0.01s, 0s; }
+
+  .hud,
+  body.hud-hidden .hud {
+    transition-duration: 0.01s, 0s;
+  }
 }
 
 .widget-header-content {
@@ -235,6 +252,7 @@ canvas#mandalaCanvas {
   user-select: none;
   transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
+
 .hdr-btn:hover {
   background: var(--theme-btn-hover, rgba(255, 255, 255, 0.08));
 }
@@ -326,16 +344,20 @@ canvas#mandalaCanvas {
     flex-wrap: wrap;
     gap: 6px;
   }
+
   .widget-header-actions {
     flex-wrap: wrap;
     gap: 6px;
   }
+
   .widget-title {
     font-size: 18px;
   }
+
   .widget-subtitle {
     font-size: 11px;
   }
+
   .hdr-btn {
     padding: 5px 10px;
     font-size: 12px;
@@ -411,7 +433,11 @@ canvas#mandalaCanvas {
   outline: 3px solid #ffffff;
   outline-offset: 2px;
 }
-.lumi-slider:focus-visible { outline-offset: -2px; border-radius: 20px; }
+
+.lumi-slider:focus-visible {
+  outline-offset: -2px;
+  border-radius: 20px;
+}
 
 .lumi-slider::-webkit-slider-runnable-track {
   height: 4px;
