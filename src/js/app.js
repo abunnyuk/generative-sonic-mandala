@@ -5,7 +5,7 @@
 // ============================================================
 const THEME_STORAGE_KEY = "mandala_theme";
 const THEMES = ["system", "light", "dark"];
-let currentThemeMode = localStorage.getItem(THEME_STORAGE_KEY) || "system";
+let currentThemeMode = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
 
 const THEME_ICONS = {
   system: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
@@ -247,6 +247,7 @@ const MandalaRenderer = (() => {
   let _impulses  = [];
   let _phase     = 0;
   let _lastTs    = 0;
+  let _paused    = false;
 
   // C3: Layout dimensions kept up-to-date by ResizeObserver
   let _vW = 600, _vH = 380;
@@ -254,7 +255,7 @@ const MandalaRenderer = (() => {
 
   // A3/A4: Theme-derived rendering values — updated in onThemeChanged()
   let _isLight  = false;
-  let _bgColor  = "#141414";
+  let _bgColor  = "#000000";
 
   // A1: Background gradient cache
   let _bgGrad    = null;
@@ -292,7 +293,8 @@ const MandalaRenderer = (() => {
   function onThemeChanged() {
     if (!_canvas) return;   // not yet initialised — safe to skip
     _isLight   = document.documentElement.getAttribute("data-theme") === "light";
-    _bgColor   = getCssVar("--surface-dim") || (_isLight ? "#ffffff" : "#141414");
+    // Dark mode is always true black so OLED subpixels switch fully off.
+    _bgColor   = _isLight ? (getCssVar("--surface-dim") || "#ffffff") : "#000000";
     _gradDirty = true;
   }
 
@@ -307,9 +309,9 @@ const MandalaRenderer = (() => {
       _bgGrad.addColorStop(0.6, "rgba(220, 225, 235, 0.12)");
       _bgGrad.addColorStop(1,   "rgba(255, 255, 255, 0)");
     } else {
-      _bgGrad.addColorStop(0,   "rgba(49, 134, 255, 0.08)");
-      _bgGrad.addColorStop(0.6, "rgba(15, 15, 15, 0.02)");
-      _bgGrad.addColorStop(1,   "rgba(0, 0, 0, 0)");
+      // Dark: no ambient glow (see _renderFrame) — untouched pixels stay #000.
+      _bgGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+      _bgGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
     }
     _bgGradKey = key;
     _gradDirty = false;
@@ -402,14 +404,22 @@ const MandalaRenderer = (() => {
       return;
     }
 
-    // ── Clear ──
+    // Paused (media key / button): freeze the last frame, keep the loop alive.
+    if (_paused) {
+      _rafId = requestAnimationFrame(_renderFrame);
+      return;
+    }
+
+    // ── Clear ── (opaque #000 in dark mode; nothing is drawn over untouched areas)
     _ctx.globalCompositeOperation = "source-over";
     _ctx.fillStyle = _bgColor;
     _ctx.fillRect(0, 0, w, h);
 
-    // A1: Use cached background gradient
-    _ctx.fillStyle = _getBgGrad(centerX, centerY, maxRadius);
-    _ctx.fillRect(0, 0, w, h);
+    // A1: Use cached background gradient — light theme only; dark stays pure black
+    if (_isLight) {
+      _ctx.fillStyle = _getBgGrad(centerX, centerY, maxRadius);
+      _ctx.fillRect(0, 0, w, h);
+    }
 
     // C12: Phase advances proportional to elapsed time, modulated by C9 motion scale
     _phase += 0.015 * dt60 * _motionScale;
@@ -649,7 +659,8 @@ const MandalaRenderer = (() => {
   function init() {
     _canvas = document.getElementById("mandalaCanvas");
     if (!_canvas) return;
-    _ctx = _canvas.getContext("2d");
+    // alpha:false → opaque backbuffer that starts (and clears) as pure black.
+    _ctx = _canvas.getContext("2d", { alpha: false });
 
     // Seed theme cache before first paint
     onThemeChanged();
@@ -683,6 +694,8 @@ const MandalaRenderer = (() => {
     stop,
     triggerImpulse,
     onThemeChanged,
+    setPaused(p) { _paused = !!p; _lastTs = 0; return _paused; },
+    get paused() { return _paused; },
     get canvas() { return _canvas; },
   };
 })();
@@ -784,6 +797,7 @@ const InteractionCtrl = (() => {
     // ── Keyboard shortcuts ──
     // Guard: do not intercept when user is typing inside a form control
     window.addEventListener("keydown", e => {
+      if (!HudCtrl.isVisible) return;   // hidden HUD ⇒ no hidden option can fire
       const tag = e.target.tagName;
       if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
       if (e.key === "m" || e.key === "M") AudioEngine.toggle();
@@ -818,6 +832,195 @@ const InteractionCtrl = (() => {
   }
 
   return { init, mousePos, invalidateRect: () => { _rectDirty = true; } };
+})();
+
+// ============================================================
+// HUD CONTROLLER — Android TV / Google TV remote, auto-hide, focus safety
+// ============================================================
+const HudCtrl = (() => {
+  const HIDE_AFTER_MS = 4000;   // inactivity timeout
+  const INITIAL_MS    = 4000;   // launch discovery window
+
+  // Android KeyEvent codes (delivered as keyCode when `key` is "Unidentified").
+  const KEYCODE = {
+    BACK: 4, DPAD_UP: 19, DPAD_DOWN: 20, DPAD_LEFT: 21, DPAD_RIGHT: 22, DPAD_CENTER: 23,
+    MEDIA_PLAY_PAUSE: 85, MEDIA_PLAY: 126, MEDIA_PAUSE: 127,
+  };
+  // DOM `key` values produced by Chrome / WebView / desktop for the same buttons.
+  const BY_KEY = {
+    ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT",
+    Enter: "CENTER", " ": "CENTER",
+    GoBack: "BACK", BrowserBack: "BACK", Escape: "BACK",
+    MediaPlayPause: "PLAY_PAUSE", MediaPlay: "PLAY", MediaPause: "PAUSE",
+  };
+  const BY_CODE = {
+    [KEYCODE.BACK]: "BACK", [KEYCODE.DPAD_UP]: "UP", [KEYCODE.DPAD_DOWN]: "DOWN",
+    [KEYCODE.DPAD_LEFT]: "LEFT", [KEYCODE.DPAD_RIGHT]: "RIGHT", [KEYCODE.DPAD_CENTER]: "CENTER",
+    [KEYCODE.MEDIA_PLAY_PAUSE]: "PLAY_PAUSE", [KEYCODE.MEDIA_PLAY]: "PLAY", [KEYCODE.MEDIA_PAUSE]: "PAUSE",
+  };
+  const FOCUSABLE = "button, select, input, [href], [tabindex]";
+
+  let _visible = true;
+  let _timer   = null;
+  let _els     = [];   // .hud containers
+  let _primary = null;
+
+  function classify(e) {
+    if (e.key && e.key !== "Unidentified") return BY_KEY[e.key] || null;
+    return BY_CODE[e.keyCode] || null;   // raw Android codes only when key is unknown
+  }
+
+  function _focusables() {
+    return _els
+      .flatMap(el => Array.from(el.querySelectorAll(FOCUSABLE)))
+      .filter(el =>
+        !el.disabled &&
+        !el.closest(".control-deck.is-collapsed .control-deck-body") &&
+        el.getClientRects().length > 0);
+  }
+
+  function _setFocusable(on) {
+    _els.forEach(el => {
+      el.inert = !on;
+      el.setAttribute("aria-hidden", String(!on));
+      el.querySelectorAll(FOCUSABLE).forEach(c => {
+        if (on) c.removeAttribute("tabindex");   // restore natural order
+        else    c.tabIndex = -1;
+      });
+    });
+  }
+
+  function _restartTimer(ms = HIDE_AFTER_MS) {
+    clearTimeout(_timer);
+    if (_visible) _timer = setTimeout(hide, ms);
+  }
+
+  function show({ focus = false, ms = HIDE_AFTER_MS } = {}) {
+    _visible = true;
+    document.body.classList.remove("hud-hidden");
+    _setFocusable(true);
+    if (focus && _primary) _primary.focus({ preventScroll: true });
+    _restartTimer(ms);
+  }
+
+  function hide() {
+    clearTimeout(_timer);
+    _visible = false;
+    const a = document.activeElement;
+    if (a && _els.some(el => el.contains(a))) a.blur();   // keys must not reach hidden controls
+    document.body.classList.add("hud-hidden");
+    _setFocusable(false);
+  }
+
+  /** Nearest focusable in the pressed direction (spatial navigation). */
+  function _move(dir, from) {
+    const items = _focusables();
+    if (!items.length) return;
+    if (!from || !items.includes(from)) { (_primary || items[0]).focus(); return; }
+    const r = from.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let best = null, bestScore = Infinity;
+    for (const el of items) {
+      if (el === from) continue;
+      const b  = el.getBoundingClientRect();
+      const dx = (b.left + b.width / 2) - cx;
+      const dy = (b.top + b.height / 2) - cy;
+      const [main, cross] =
+        dir === "RIGHT" ? [ dx, Math.abs(dy)] :
+        dir === "LEFT"  ? [-dx, Math.abs(dy)] :
+        dir === "DOWN"  ? [ dy, Math.abs(dx)] : [-dy, Math.abs(dx)];
+      if (main <= 1) continue;                 // not in that direction
+      const score = main + cross * 2;          // favour aligned targets
+      if (score < bestScore) { bestScore = score; best = el; }
+    }
+    if (best) best.focus({ preventScroll: true });
+  }
+
+  function togglePlay(force) {
+    const next = typeof force === "boolean" ? force : !MandalaRenderer.paused;
+    MandalaRenderer.setPaused(next);
+    if (_primary) {
+      _primary.textContent = next ? "Play" : "Pause";
+      _primary.setAttribute("aria-pressed", String(next));
+      _primary.setAttribute("aria-label", next ? "Resume the visualiser animation" : "Pause the visualiser animation");
+    }
+  }
+
+  /** Returns true if the BACK press was consumed (HUD was visible and is now hidden). */
+  function handleBack() {
+    if (!_visible) return false;   // let default back/exit navigation proceed
+    hide();
+    return true;
+  }
+
+  function _onKeyDown(e) {
+    const action = classify(e);
+
+    // Any key while visible counts as activity.
+    if (_visible) _restartTimer();
+
+    if (!action) return;
+
+    if (action === "BACK") {
+      if (handleBack()) { e.preventDefault(); e.stopImmediatePropagation(); }
+      return;   // hidden: do NOT preventDefault → default back/exit
+    }
+
+    if (action === "PLAY_PAUSE" || action === "PLAY" || action === "PAUSE") {
+      e.preventDefault();
+      togglePlay(action === "PLAY_PAUSE" ? undefined : action === "PAUSE");
+      show();            // brief confirmation, no focus change
+      return;
+    }
+
+    // D-pad (UP/DOWN/LEFT/RIGHT/CENTER)
+    if (!_visible) {
+      // First press only wakes the HUD; it must not change any setting.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!e.repeat) show({ focus: true });
+      return;
+    }
+
+    const cur = _els.some(el => el.contains(document.activeElement)) ? document.activeElement : null;
+
+    if (action === "CENTER") {
+      if (!cur) { e.preventDefault(); _primary?.focus(); return; }
+      // Enter/Space already click natively; raw DPAD_CENTER (key "Unidentified") does not.
+      if (e.key === "Unidentified" && cur.tagName !== "INPUT") { e.preventDefault(); cur.click(); }
+      return;
+    }
+
+    // Sliders keep native Left/Right (adjust value); everything else is spatial.
+    if (cur && cur.type === "range" && (action === "LEFT" || action === "RIGHT")) return;
+    e.preventDefault();
+    _move(action, cur);
+  }
+
+  function init() {
+    _els     = Array.from(document.querySelectorAll(".hud"));
+    _primary = document.getElementById("playPauseBtn");
+
+    _primary?.addEventListener("click", () => togglePlay());
+
+    // Capture phase: run before app/shortcut handlers and native control behaviour.
+    window.addEventListener("keydown", _onKeyDown, true);
+
+    // Pointer/focus activity keeps (or wakes) the HUD for mouse/touch users.
+    const activity = () => (_visible ? _restartTimer() : show());
+    window.addEventListener("pointerdown", activity, { passive: true });
+    window.addEventListener("pointermove", e => { if (e.pointerType === "mouse") activity(); }, { passive: true });
+    document.addEventListener("input",  () => _restartTimer(), true);
+    document.addEventListener("change", () => _restartTimer(), true);
+
+    // Hook for a native Android wrapper: onBackPressed → if (!window.mandalaHandleBack()) finish();
+    window.mandalaHandleBack = handleBack;
+
+    // Launch: reveal briefly so users discover remote navigation, then fade out.
+    show({ ms: INITIAL_MS });
+  }
+
+  return { init, show, hide, handleBack, get isVisible() { return _visible; } };
 })();
 
 // ============================================================
@@ -871,6 +1074,7 @@ function initApp() {
   document.querySelectorAll('input[type="range"], .lumi-slider').forEach(normalizeSlider);
   MandalaRenderer.init();
   InteractionCtrl.init();
+  HudCtrl.init();
   applyTheme(currentThemeMode);
   MandalaRenderer.start();
 }
