@@ -8,7 +8,7 @@ The Android app is a thin Kotlin WebView wrapper in [`android/`](../android). Th
 | --- | --- | --- |
 | JDK | 17 | Temurin or OpenJDK. Check with `java -version`. |
 | Android SDK | Platform `android-34`, Build-Tools `34.0.0` | Install via Android Studio or the command-line tools (below). |
-| Gradle | Not needed | The checked-in wrapper (`android/gradlew`, Gradle 8.7) downloads it. |
+| Gradle | Not needed | The checked-in wrapper (`android/gradlew`, Gradle 9.7.1) downloads it. Gradle 9 requires JDK 17 or newer to run. |
 | `adb` | Any recent | Part of the SDK `platform-tools`. Needed only to install on a device or emulator. |
 | `keytool` | Ships with the JDK | Needed only to create a signing key. |
 | GitHub CLI (`gh`) | Optional | Only for publishing a GitHub Release from your machine. |
@@ -118,7 +118,7 @@ gh release create v1.0.0 dist/sonic-mandala-1.0.0-release.apk \
 
 ### Option B: Let CI do it
 
-Push a version tag. The [Build Android App](../.github/workflows/android-release.yml) workflow builds the APKs and attaches them to a GitHub Release.
+Push a version tag. The [Android App](../.github/workflows/android.yml) workflow builds the APKs and attaches them to a GitHub Release (details in [CI.md](CI.md)).
 
 ```bash
 git tag v1.0.0
@@ -135,6 +135,15 @@ base64 -w0 ~/sonic-mandala-release.keystore   # macOS: base64 -i file
 
 Build the `.aab` (section 5), then upload it in the Play Console under your app's release track. Enrol in Play App Signing when prompted. Remember to bump `VERSION_CODE` for every upload.
 
+## Dependency security overrides
+
+The build tooling (Android Gradle Plugin 8.5.2, Kotlin plugin 2.1.0) resolves old transitive libraries in its own internal configurations (unified test platform, lint, and so on). These never ship in the APK, but scanners such as the Snyk IDE extension report them. [`android/build.gradle.kts`](../android/build.gradle.kts) therefore overrides them:
+
+- A `buildscript { constraints { … } }` block pins `io.netty` 4.1.140.Final, `protobuf-java` 3.25.9, and `commons-io` 2.22.0 on the plugin classpath.
+- An `allprojects { configurations.all { resolutionStrategy … } }` block applies the same versions, plus `kotlin-stdlib` 2.1.0, to every project configuration (alongside the pinned `guava`).
+
+Check the result with `./gradlew :app:dependencies` and `./gradlew buildEnvironment`. Revisit the overrides whenever AGP is upgraded; they may no longer be needed.
+
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -145,3 +154,5 @@ Build the `.aab` (section 5), then upload it in the Play Console under your app'
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | An app with a different signature is installed. Run `adb uninstall com.generative.mandala`. |
 | "Enable Mic" shows "Permission Denied" | The permission was denied in Android Settings. Grant it under Settings → Apps → Sonic Mandala → Permissions. |
 | `gradlew: Permission denied` | Run `chmod +x android/gradlew`. |
+| `Vulnerable protobuf generated type in use: com.google.crypto.tink...` during `sdkReleaseDependencyData` | Harmless log noise from Tink classes bundled with the Android tooling, not your code. The build still succeeds. |
+| `This version only understands SDK XML versions up to 3` | The command-line tools and Android Studio versions differ. A warning only; update the SDK tools to silence it. |

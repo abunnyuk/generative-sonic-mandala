@@ -1,19 +1,20 @@
-name: Build Android App
+name: Android App
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
     branches:
       - main
     paths:
-      - 'src/**'
-      - 'android/**'
-      - '.github/workflows/android-release.yml'
+      - "src/**"
+      - "android/**"
+      - ".github/workflows/android.yml"
   pull_request:
     paths:
-      - 'src/**'
-      - 'android/**'
+      - "src/**"
+      - "android/**"
+      - ".github/workflows/android.yml"
   workflow_dispatch:
 
 permissions:
@@ -37,7 +38,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -88,4 +89,3 @@ jobs:
         with:
           files: dist/*.apk
           generate_release_notes: true
-

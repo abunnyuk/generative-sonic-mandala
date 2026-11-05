@@ -27,15 +27,12 @@ When writing or modifying code, keep the following core constraints in mind:
     git checkout -b feature/your-feature-name
    ```
 
-2. Start a local HTTP server from the project root (required for Web Audio, modules, and asset loading):
+2. Run the app locally by following the [Quick Start in the README](README.md#quick-start). Serve `src/` over `localhost` or `https://`; Web Audio microphone access requires a secure origin.
+3. Make your changes in `src/` (the only source of truth for the web app; the Android build copies it from there).
+4. Verify in your browser at `http://localhost:8000`. Check that there are no unhandled exceptions in the console, and test mouse, touch, and keyboard/D-pad navigation, light/dark themes, and `prefers-reduced-motion`.
+5. If your change affects the Android wrapper (`android/`) or needs testing inside the WebView, follow [docs/ANDROID.md](docs/ANDROID.md) to build and install a debug APK.
+6. Open a pull request against `main`. Changes under `src/`, `android/`, or the Android workflow trigger the Android build (see [docs/CI.md](docs/CI.md)), which must pass.
 
-    ```bash
-    # Node.js
-    npx serve src -l 8000
+## Dependencies & Security
 
-    # or Python 3
-    python3 -m http.server 8000 --directory src
-    ```
-
-3. Open `http://localhost:8000` in your browser to verify changes.
-4. Ensure all manual testing and browser console checks pass cleanly without unhandled runtime exceptions.
+The web app has no runtime dependencies; please keep it that way. For the Android build, the Gradle versions and the security-driven dependency overrides in [`android/build.gradle.kts`](android/build.gradle.kts) are described in [docs/ANDROID.md](docs/ANDROID.md#dependency-security-overrides). Do not commit keystores or credentials.

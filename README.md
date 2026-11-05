@@ -1,7 +1,8 @@
 # Generative Sonic Mandala
 
 [![CodeQL](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/github-code-scanning/codeql)
-[![Publish Static Website](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/publish.yml/badge.svg)](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/publish.yml)
+[![GitHub Pages](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/pages.yml/badge.svg)](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/pages.yml)
+[![Android App](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/android.yml/badge.svg)](https://github.com/abunnyuk/generative-sonic-mandala/actions/workflows/android.yml)
 
 An interactive, audio-reactive radial waveform visualizer built with HTML5 Canvas and the Web Audio API. It transforms microphone input and mathematical harmonic ratios into dynamic polyrhythmic mandalas with real-time particle dynamics.
 
@@ -16,8 +17,9 @@ An interactive, audio-reactive radial waveform visualizer built with HTML5 Canva
 - **OLED True Black Foundation**: True black (`#000000`) canvas clearing and styling designed to protect OLED displays against burn-in.
 - **Multi-Input & Spatial Navigation**: Comprehensive support for mouse, touch, keyboard, and TV remote D-pads (including Google TV / Android keycodes).
 - **Snapshot Export**: Export crisp high-resolution PNG captures directly from the canvas.
+- **Native Android App**: A WebView wrapper with runtime microphone permission, installable as an APK (see [Android App](#android-app)).
 - **Theme Support & Accessibility**: Dark, Light, and System themes, `prefers-reduced-motion` compliance, and full ARIA semantics.
-- **Zero Dependencies**: Lightweight vanilla JavaScript, CSS, and HTML with no build tools, bundlers, or npm packages required. Organized cleanly with source files in `src/`.
+- **Zero Dependencies**: Lightweight vanilla JavaScript, CSS, and HTML with no build tools, bundlers, or npm packages required for the web app.
 
 ## Quick Start
 
@@ -41,17 +43,22 @@ Modern browsers require a secure origin (`localhost` or `https://`) to grant mic
 ## Project Structure
 
 ```text
-├── .github/          # GitHub Actions workflows & issue templates
-├── CONTRIBUTING.md   # Contribution guidelines & architectural principles
-├── LICENSE           # GNU General Public License v3.0
-├── README.md         # Project documentation
-└── src/
-    ├── assets/       # Static media assets & icons
-    ├── css/
-    │   └── style.css # Stylesheets, themes, & design tokens
-    ├── js/
-    │   └── app.js    # Canvas rendering, Web Audio FFT, & interactions
-    └── index.html    # Application entry point
+├── .github/
+│   ├── ISSUE_TEMPLATE/   # Bug report & feature request templates
+│   └── workflows/        # GitHub Pages + Android build workflows
+├── .vscode/              # Shared editor settings
+├── android/              # Native Android (Kotlin + WebView) wrapper
+├── docs/
+│   ├── ANDROID.md        # Build, sign, and publish the Android app
+│   └── CI.md             # GitHub Actions workflows & release process
+├── src/                  # The web app (single source of truth, also bundled into the APK)
+│   ├── assets/           # Static media assets & icons
+│   ├── css/style.css     # Stylesheets, themes, & design tokens
+│   ├── js/app.js         # Canvas rendering, Web Audio FFT, & interactions
+│   └── index.html        # Application entry point
+├── CONTRIBUTING.md       # Contribution guidelines & architectural principles
+├── LICENSE               # GNU General Public License v3.0
+└── README.md
 ```
 
 ## Controls & Keyboard Shortcuts
@@ -77,23 +84,22 @@ Modern browsers require a secure origin (`localhost` or `https://`) to grant mic
 - **Styling & Fonts**: CSS Custom Properties, Google Sans Flex & Google Sans Code
 - **Ergonomics & Navigation**: Auto-hiding HUD with focus lifecycle management (`inert`), cursor auto-suppression, and 2D spatial D-pad navigation
 - **Runtime**: 100% Vanilla JavaScript with zero external dependencies
+- **Android**: Kotlin, `WebView` + `WebViewAssetLoader`, Android Gradle Plugin 8.5, Gradle 9.7 (JDK 17)
+
+## Android App
+
+A native Android wrapper (Kotlin + WebView, no Node required) lives in [`android/`](android/). It bundles `src/` into the APK, serves it from the secure `https://appassets.androidplatform.net` origin, and requests the `RECORD_AUDIO` permission at runtime when you tap **Enable Mic**.
+
+```bash
+cd android && ./gradlew assembleDebug   # requires JDK 17 + Android SDK 34
+```
+
+See [docs/ANDROID.md](docs/ANDROID.md) for the full build, signing, and publishing guide, and [docs/CI.md](docs/CI.md) for the automated builds and releases.
 
 ## Contributing
 
-Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for architectural principles, code of conduct, and development guidelines.
+Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for architectural principles, code of conduct, and development workflow.
 
 ## License
 
 This project is licensed under the [GNU General Public License v3.0](LICENSE).
-
-## Android app
-
-A native Android wrapper (Kotlin + WebView, no Node required) lives in [`android/`](android/). It bundles `src/` into the APK, serves it from a secure `https://appassets.androidplatform.net` origin, and requests the `RECORD_AUDIO` permission at runtime when you tap **Enable Mic**.
-
-Full local build, signing and publishing guide: [docs/ANDROID.md](docs/ANDROID.md). Quick start (JDK 17 + Android SDK 34):
-
-```bash
-cd android && ./gradlew assembleDebug   # -> app/build/outputs/apk/debug/app-debug.apk
-```
-
-The [Build Android App](.github/workflows/android-release.yml) workflow builds APKs on every push to `main` and attaches them to a GitHub Release when a `v*` tag is pushed (e.g. `git tag v1.0.0 && git push --tags`). To sign the release APK, add the repo secrets `ANDROID_KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and `KEY_PASSWORD`; without them the release APK is unsigned.
