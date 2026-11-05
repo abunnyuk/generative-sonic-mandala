@@ -38,14 +38,27 @@ android {
         }
     }
 
+    // Dependency metadata is only useful to Google Play (SDK Index / vulnerability
+    // checks), which reads it from the AAB. Omit it from APKs: this skips AGP's
+    // sdkReleaseDependencyData task (bundled Tink logs protobuf gencode warnings).
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
 
     // Web assets are synced from the repo's top-level src/ (single source of truth).
     sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/webAssets"))
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
 
 val syncWebAssets = tasks.register<Sync>("syncWebAssets") {
