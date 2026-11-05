@@ -90,7 +90,7 @@ This project is licensed under the [GNU General Public License v3.0](LICENSE).
 
 A native Android wrapper (Kotlin + WebView, no Node required) lives in [`android/`](android/). It bundles `src/` into the APK, serves it from a secure `https://appassets.androidplatform.net` origin, and requests the `RECORD_AUDIO` permission at runtime when you tap **Enable Mic**.
 
-Build locally (JDK 17 + Android SDK 34):
+Full local build, signing and publishing guide: [docs/ANDROID.md](docs/ANDROID.md). Quick start (JDK 17 + Android SDK 34):
 
 ```bash
 cd android && ./gradlew assembleDebug   # -> app/build/outputs/apk/debug/app-debug.apk
