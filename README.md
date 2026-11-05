@@ -85,3 +85,15 @@ Contributions are welcome! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for 
 ## License
 
 This project is licensed under the [GNU General Public License v3.0](LICENSE).
+
+## Android app
+
+A native Android wrapper (Kotlin + WebView, no Node required) lives in [`android/`](android/). It bundles `src/` into the APK, serves it from a secure `https://appassets.androidplatform.net` origin, and requests the `RECORD_AUDIO` permission at runtime when you tap **Enable Mic**.
+
+Build locally (JDK 17 + Android SDK 34):
+
+```bash
+cd android && ./gradlew assembleDebug   # -> app/build/outputs/apk/debug/app-debug.apk
+```
+
+The [Build Android App](.github/workflows/android-release.yml) workflow builds APKs on every push to `main` and attaches them to a GitHub Release when a `v*` tag is pushed (e.g. `git tag v1.0.0 && git push --tags`). To sign the release APK, add the repo secrets `ANDROID_KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` and `KEY_PASSWORD`; without them the release APK is unsigned.
