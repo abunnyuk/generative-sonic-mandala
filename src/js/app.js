@@ -616,10 +616,14 @@ const MandalaRenderer = (() => {
     });
 
     const realPos = InteractionCtrl.mousePos;
-    // Autonomous pointer yields to real input (active hover or recent touch/move)
-    const userBusy = realPos.active || (performance.now() - InteractionCtrl.lastInputTs < 3000);
+    // Autonomous pointer yields to real input (active hover or recent touch/click).
+    // Stationary hover on the canvas times out after 3s of inactivity, allowing
+    // Auto Pulse to smoothly engage when the user goes idle and menus fade off.
+    const isRecentInput = InteractionCtrl.isDown || (performance.now() - InteractionCtrl.lastInputTs < 3000);
+    const realActive = realPos.active && isRecentInput;
+    const userBusy = isRecentInput;
     const virtPos = AutoPulse.update(dt, centerX, centerY, maxRadius, _motionScale, userBusy, triggerImpulse);
-    const mousePos = realPos.active ? realPos : virtPos;
+    const mousePos = realActive ? realPos : virtPos;
     const complexity = state.complexity;
     const resNorm = state.resonance / 100;
     const isAudio = AudioEngine.isActive;
@@ -820,7 +824,7 @@ const MandalaRenderer = (() => {
 
     const tag = document.getElementById("freqTag");
     if (tag) {
-      if (hoverTagText && realPos.active) {
+      if (hoverTagText && realActive) {
         tag.textContent = hoverTagText;
         tag.style.left = `${mousePos.x}px`;
         tag.style.top = `${mousePos.y}px`;
@@ -901,6 +905,7 @@ const InteractionCtrl = (() => {
 
   let _cachedRect = null;
   let _rectDirty = true;
+  let _isDown = false;
   let _pDownMoved = false;
   let _pDownX = 0, _pDownY = 0;
   let _lastInputTs = -Infinity;   // last real pointer activity (ms, performance.now)
@@ -942,6 +947,7 @@ const InteractionCtrl = (() => {
     }, { passive: true });
 
     canvas.addEventListener("pointerleave", () => {
+      _isDown = false;
       mousePos.active = false;
       const tag = document.getElementById("freqTag");
       if (tag) tag.style.opacity = "0";
@@ -950,6 +956,7 @@ const InteractionCtrl = (() => {
     canvas.addEventListener("pointerdown", e => {
       // Capture ensures pointermove/up fire even if pointer leaves canvas
       try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* Safari may throw */ }
+      _isDown = true;
       _pDownMoved = false;
       const { x, y } = _coords(e, canvas);
       _pDownX = x; _pDownY = y;
@@ -958,6 +965,7 @@ const InteractionCtrl = (() => {
     });
 
     canvas.addEventListener("pointerup", e => {
+      _isDown = false;
       if (!_pDownMoved) {
         const { x, y } = _coords(e, canvas);
         const now = performance.now();
@@ -977,6 +985,13 @@ const InteractionCtrl = (() => {
         }
       }
       try { canvas.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      _isDown = false;
+      mousePos.active = false;
+      const tag = document.getElementById("freqTag");
+      if (tag) tag.style.opacity = "0";
     });
 
     // ── Collapsible deck ──
@@ -1059,7 +1074,13 @@ const InteractionCtrl = (() => {
     });
   }
 
-  return { init, mousePos, get lastInputTs() { return _lastInputTs; }, invalidateRect: () => { _rectDirty = true; } };
+  return {
+    init,
+    mousePos,
+    get lastInputTs() { return _lastInputTs; },
+    get isDown() { return _isDown; },
+    invalidateRect: () => { _rectDirty = true; }
+  };
 })();
 
 // ============================================================
