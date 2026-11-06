@@ -11,7 +11,7 @@ An interactive, audio-reactive radial waveform visualizer built with HTML5 Canva
 - **Audio-Reactive Visuals**: Real-time FFT frequency mapping responds dynamically to live microphone input.
 - **Polyrhythmic Frequency Bands**: Multi-genre harmonic presets ranging from Sub-Bass (55 Hz) to Kinetic Pop (880 Hz), each with distinct wave math and color palettes.
 - **Dynamic Particle Physics**: Hundreds of responsive particles reacting to radial waveforms, acoustic impulses, and cursor proximity.
-- **Interactive Control Deck**: Fine-tune harmonic steps and turbulence, switch genre focus, and trigger acoustic ripples via click or tap.
+- **Interactive Control Deck**: Fine-tune harmonic steps and turbulence, switch genre focus, and trigger acoustic ripples via click or tap. **Auto Pulse** (0–10, default off) adds a self-driving pointer that wanders smoothly across the whole mandala and emits ripples at organic intervals — handy on TV, where there is no mouse. An optional **Shockwaves** toggle (disabled by default for a smoother look) can be enabled to draw visual concentric ripple rings.
 - **Animation Controls**: Pause and resume the generative visualizer at any frame.
 - **Distraction-Free Auto-Hiding HUD**: Controls and cursor smoothly fade out during inactivity for an immersive, uninterrupted visual experience.
 - **OLED True Black Foundation**: True black (`#000000`) canvas clearing and styling designed to protect OLED displays against burn-in.
@@ -66,6 +66,7 @@ Modern browsers require a secure origin (`localhost` or `https://`) to grant mic
 | Input / Shortcut | Action |
 | :--- | :--- |
 | **Click / Tap** | Trigger an acoustic impulse ripple on canvas, or activate controls |
+| **Double-Click / Double-Tap** | Trigger a full-mandala mega acoustic impulse |
 | **Hover / Pointer Move** | Inspect frequency bands, apply magnetic particle deflection, or wake the HUD |
 | **Play / Pause Button** / `MediaPlayPause` | Pause or resume generative animation |
 | `M` | Toggle microphone input on / off |
