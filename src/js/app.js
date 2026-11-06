@@ -90,7 +90,134 @@ const state = {
   genre: "all",
   complexity: 12,
   resonance: 45,
+  autoPulse: 0,   // 0 = off … 10 = fastest autonomous impulse generator
+  shockwaves: false, // false by default = smooth look (no concentric shockwave rings)
 };
+
+const AUTO_PULSE_STORAGE_KEY = "mandala_auto_pulse";
+const SHOCKWAVES_STORAGE_KEY = "mandala_shockwaves";
+(function restoreSettings() {
+  try {
+    const v = parseInt(localStorage.getItem(AUTO_PULSE_STORAGE_KEY), 10);
+    if (v >= 0 && v <= 10) state.autoPulse = v;
+    const r = localStorage.getItem(SHOCKWAVES_STORAGE_KEY);
+    if (r !== null) state.shockwaves = r === "true";
+  } catch (_) { /* storage unavailable */ }
+})();
+
+// ============================================================
+// AUTO PULSE
+// Autonomous "virtual pointer" that glides along a random, smooth
+// curved path across the whole mandala (rim included) and emits acoustic impulses at organic,
+// slightly randomised intervals. Level 0 = off, 10 = fastest.
+// Effects only: nothing is drawn for the pointer itself.
+// ============================================================
+const AutoPulse = (() => {
+  const pos = { x: 0, y: 0, active: false };
+  let _countdown = 0;  // ms until next impulse
+  let _wasOn = false;
+  let _u = 0;          // progress along the current spline segment (0..1)
+  let _pts = [];       // 4 control points (normalised, unit disc) for Catmull-Rom
+  let _n = 0;          // waypoints generated so far
+
+  // Pause & gradual ramp-up after a Mega Impulse
+  // Gives 3.5s of calm stillness to enjoy the mega ripple expanding,
+  // followed by a 4.5s smooth ease back up to full configured speed & rate.
+  const MEGA_COOLDOWN_PAUSE_MS = 3500;
+  const MEGA_COOLDOWN_RAMP_MS = 4500;
+  let _cooldownTimer = 0; // ms remaining in total cooldown (pause + ramp)
+
+  function onMegaImpulse() {
+    _cooldownTimer = MEGA_COOLDOWN_PAUSE_MS + MEGA_COOLDOWN_RAMP_MS;
+    // Push next regular impulse countdown back so it doesn't fire during the quiet pause
+    _countdown = Math.max(_countdown, MEGA_COOLDOWN_PAUSE_MS + 1000);
+  }
+
+  // L1 ≈ 6 s, L5 ≈ 1.6 s, L10 ≈ 0.6 s
+  function _interval(level) { return 6000 * Math.pow(0.72, level - 1); }
+  function _nextDelay(level) { return _interval(level) * (1 + (Math.random() * 2 - 1) * 0.3); }
+
+  // Random waypoint in the unit disc. Every other point is pushed out to the
+  // rim so the path regularly reaches the outer edge of the mandala; the rest
+  // are scattered anywhere (area-uniform) so it also crosses the interior.
+  function _waypoint() {
+    const edge = (_n++ % 2) === 0;
+    const r = edge ? 0.85 + Math.random() * 0.15 : Math.sqrt(Math.random()) * 0.9;
+    const a = Math.random() * Math.PI * 2;
+    return { x: Math.cos(a) * r, y: Math.sin(a) * r };
+  }
+
+  function _catmull(p0, p1, p2, p3, u) {
+    const u2 = u * u, u3 = u2 * u;
+    const f = (a, b, c, d) => 0.5 * ((2 * b) + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u2 + (-a + 3 * b - 3 * c + d) * u3);
+    return { x: f(p0.x, p1.x, p2.x, p3.x), y: f(p0.y, p1.y, p2.y, p3.y) };
+  }
+
+  // dt in ms. Returns the virtual pointer ({x,y,active}); fires impulses via `fire`.
+  function update(dt, cx, cy, maxR, motionScale, suppressed, fire) {
+    const level = state.autoPulse;
+    if (level <= 0) { _wasOn = false; pos.active = false; return pos; }
+
+    // Factor in post-Mega Impulse stillness & gradual ramp-up
+    let rampFactor = 1.0;
+    if (_cooldownTimer > 0) {
+      _cooldownTimer = Math.max(0, _cooldownTimer - dt);
+      if (_cooldownTimer > MEGA_COOLDOWN_RAMP_MS) {
+        // Still in stillness pause phase
+        rampFactor = 0;
+      } else {
+        // In gradual ramp-up phase (0 -> 1)
+        const progress = 1 - (_cooldownTimer / MEGA_COOLDOWN_RAMP_MS);
+        // Smooth cubic ease-in-out
+        rampFactor = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      }
+    }
+
+    const effectiveLevel = level * rampFactor;
+    const k = effectiveLevel / 10;
+    const sec = dt / 1000;
+    const ms = Math.max(motionScale, 0.15);
+
+    if (_pts.length === 0) { for (let i = 0; i < 4; i++) _pts.push(_waypoint()); }
+
+    // Travel speed in unit-disc radii per second; halts/creeps during cooldown then eases up
+    const speed = (0.18 + 0.55 * k) * ms * (0.1 + 0.9 * rampFactor);
+    const segLen = Math.max(0.3, Math.hypot(_pts[2].x - _pts[1].x, _pts[2].y - _pts[1].y));
+    _u += (speed * sec) / segLen;
+    while (_u >= 1) { _u -= 1; _pts.shift(); _pts.push(_waypoint()); }
+
+    const c = _catmull(_pts[0], _pts[1], _pts[2], _pts[3], _u);
+    const tx = cx + c.x * maxR;
+    const ty = cy + c.y * maxR;
+
+    if (!_wasOn) {                       // start on the path, no jump
+      pos.x = tx; pos.y = ty;
+      _countdown = _nextDelay(level);
+      _wasOn = true;
+    } else {
+      const f = 1 - Math.exp(-dt / 80);  // light smoothing
+      pos.x += (tx - pos.x) * f;
+      pos.y += (ty - pos.y) * f;
+    }
+    pos.active = true;
+
+    // In stillness pause, suppress impulses and countdown decrements
+    const inPause = _cooldownTimer > MEGA_COOLDOWN_RAMP_MS;
+    if (!suppressed && !inPause) {
+      _countdown -= dt * Math.max(0.2, rampFactor);
+      if (_countdown <= 0) {
+        fire(pos.x, pos.y, {
+          energy: (0.5 + 0.5 * k) * (0.85 + Math.random() * 0.3),
+          speed: 5 + 3 * k,
+        });
+        _countdown = _nextDelay(Math.max(1, Math.round(effectiveLevel)));   // at most one impulse per frame
+      }
+    }
+    return pos;
+  }
+
+  return { update, pos, onMegaImpulse };
+})();
 
 // ============================================================
 // AUDIO ENGINE
@@ -249,6 +376,16 @@ const MandalaRenderer = (() => {
   let _lastTs = 0;
   let _paused = false;
 
+  // Mega impulse: rare, randomised acoustic ripple triggered when Auto Pulse > 0.
+  // Delay is uniform in [15 s, 5 min] skewed toward longer waits (r²) so it
+  // stays a surprise rather than a pattern: median ≈ 1 min 10 s.
+  const MEGA_MIN_MS = 15000, MEGA_MAX_MS = 300000;
+  function _nextMegaDelay() {
+    const r = Math.random();
+    return MEGA_MIN_MS + r * r * (MEGA_MAX_MS - MEGA_MIN_MS);
+  }
+  let _megaCountdown = _nextMegaDelay();
+
   // C3: Layout dimensions kept up-to-date by ResizeObserver
   let _vW = 600, _vH = 380;
   let _dpr = window.devicePixelRatio || 1;
@@ -356,14 +493,30 @@ const MandalaRenderer = (() => {
   }
 
   // Called by InteractionCtrl on tap/click
-  function triggerImpulse(cx, cy) {
+  function triggerImpulse(cx, cy, opts) {
+    if (_impulses.length >= 8) _impulses.shift();   // cap for low-end GPUs (TV)
     _impulses.push({
       x: cx, y: cy,
       radius: 0,
       maxRadius: Math.max(_canvas.width, _canvas.height) * 0.8,
-      speed: 7,
-      energy: 1.0,
+      speed: (opts && opts.speed) || 7,
+      energy: (opts && opts.energy) || 1.0,
+      decay: (opts && opts.decay) || 0.95,   // per-frame energy falloff
+      width: (opts && opts.width) || 2,      // base stroke width
     });
+
+    if (opts && opts.mega) {
+      // Mega impulse: shove every particle outward from the impact point
+      const mcx = _vW / 2, mcy = _vH / 2;
+      const mR = Math.min(_vW, _vH) * 0.45;
+      _particles.forEach(p => {
+        const px = mcx + Math.cos(p.angle) * p.currentNormDist * mR;
+        const py = mcy + Math.sin(p.angle) * p.currentNormDist * mR;
+        p.burstVelocity = 10 * (0.8 + Math.random() * 0.4);
+        p.burstAngle = Math.atan2(py - cy, px - cx);
+      });
+      return;
+    }
 
     const centerX = _vW / 2;
     const centerY = _vH / 2;
@@ -384,6 +537,19 @@ const MandalaRenderer = (() => {
     });
   }
 
+  function triggerMegaImpulse(cx, cy) {
+    const x = cx !== undefined ? cx : _vW / 2;
+    const y = cy !== undefined ? cy : _vH / 2;
+    triggerImpulse(x, y, {
+      mega: true,
+      energy: 1.0,
+      speed: Math.max(_vW, _vH) / 180,   // ≈ 3 s to cross the screen
+      decay: 0.988,
+      width: 7,
+    });
+    AutoPulse.onMegaImpulse();
+  }
+
   // ── Main render loop ──────────────────────────────────────
   function _renderFrame(ts) {
     if (!_canvas || !_ctx) return;
@@ -397,6 +563,15 @@ const MandalaRenderer = (() => {
     const centerX = w / 2;
     const centerY = h / 2;
     const maxRadius = Math.min(w, h) * 0.42;
+
+    // Mega impulse timer: active only when Auto Pulse > 0 and not paused
+    if (!_paused && state.autoPulse > 0) {
+      _megaCountdown -= dt;
+      if (_megaCountdown <= 0) {
+        triggerMegaImpulse(centerX, centerY);
+        _megaCountdown = _nextMegaDelay();
+      }
+    }
 
     // Guard: skip frame if canvas has zero area
     if (w < 1 || h < 1) {
@@ -440,7 +615,15 @@ const MandalaRenderer = (() => {
       energyMap[b.id] = AudioEngine.getFrequencyEnergy(b.baseFrequency);
     });
 
-    const mousePos = InteractionCtrl.mousePos;
+    const realPos = InteractionCtrl.mousePos;
+    // Autonomous pointer yields to real input (active hover or recent touch/click).
+    // Stationary hover on the canvas times out after 3s of inactivity, allowing
+    // Auto Pulse to smoothly engage when the user goes idle and menus fade off.
+    const isRecentInput = InteractionCtrl.isDown || (performance.now() - InteractionCtrl.lastInputTs < 3000);
+    const realActive = realPos.active && isRecentInput;
+    const userBusy = isRecentInput;
+    const virtPos = AutoPulse.update(dt, centerX, centerY, maxRadius, _motionScale, userBusy, triggerImpulse);
+    const mousePos = realActive ? realPos : virtPos;
     const complexity = state.complexity;
     const resNorm = state.resonance / 100;
     const isAudio = AudioEngine.isActive;
@@ -537,12 +720,17 @@ const MandalaRenderer = (() => {
         ? 0.55 + (p.baseNormDist - 0.55) * 0.4
         : p.currentNormDist;
 
-      if (p.burstVelocity > 0.1) {
-        p.currentNormDist += p.burstVelocity * 0.002;
-        p.burstVelocity *= 0.92;
-      } else {
-        p.currentNormDist += (p.baseNormDist - p.currentNormDist) * 0.05;
+      // Smooth, organic return physics:
+      // When burstVelocity is high, push outward and decay smoothly.
+      // When settling back toward base orbit, ease in with a gentle spring damping
+      // instead of an abrupt linear snap.
+      if (p.burstVelocity > 0.05) {
+        p.currentNormDist += p.burstVelocity * 0.002 * dt60;
+        p.burstVelocity *= Math.pow(0.93, dt60);
       }
+      // Continuous gentle ease back to base radius
+      const distDelta = p.baseNormDist - p.currentNormDist;
+      p.currentNormDist += distDelta * (1 - Math.pow(0.975, dt60));
 
       const audioOffset = liveAudio * 0.04 * band.energy;
       const wobble = Math.sin(_phase * 2 + p.seed) * 0.015 * resNorm;
@@ -579,23 +767,27 @@ const MandalaRenderer = (() => {
     });
 
     // ── 3. Acoustic Impulse Ripples ──────────────────────────
-    for (let i = _impulses.length - 1; i >= 0; i--) {
-      const imp = _impulses[i];
-      // C12: ripple speed is time-normalised
-      imp.radius += imp.speed * dt60;
-      imp.energy *= 0.95;
+    if (state.shockwaves) {
+      for (let i = _impulses.length - 1; i >= 0; i--) {
+        const imp = _impulses[i];
+        // C12: ripple speed is time-normalised
+        imp.radius += imp.speed * dt60;
+        imp.energy *= imp.decay;
 
-      _ctx.beginPath();
-      _ctx.arc(imp.x, imp.y, imp.radius, 0, Math.PI * 2);
-      _ctx.strokeStyle = _isLight
-        ? `rgba(30, 90, 190, ${0.5 * imp.energy})`
-        : `rgba(157, 210, 255, ${0.6 * imp.energy})`;
-      _ctx.lineWidth = 2 * imp.energy;
-      _ctx.stroke();
+        _ctx.beginPath();
+        _ctx.arc(imp.x, imp.y, imp.radius, 0, Math.PI * 2);
+        _ctx.strokeStyle = _isLight
+          ? `rgba(30, 90, 190, ${0.5 * imp.energy})`
+          : `rgba(157, 210, 255, ${0.6 * imp.energy})`;
+        _ctx.lineWidth = imp.width * imp.energy;
+        _ctx.stroke();
 
-      if (imp.energy < 0.02 || imp.radius > imp.maxRadius) {
-        _impulses.splice(i, 1);
+        if (imp.energy < 0.02 || imp.radius > imp.maxRadius) {
+          _impulses.splice(i, 1);
+        }
       }
+    } else if (_impulses.length > 0) {
+      _impulses.length = 0;
     }
 
     // ── 4. Central Geometric Core ────────────────────────────
@@ -632,7 +824,7 @@ const MandalaRenderer = (() => {
 
     const tag = document.getElementById("freqTag");
     if (tag) {
-      if (hoverTagText && mousePos.active) {
+      if (hoverTagText && realActive) {
         tag.textContent = hoverTagText;
         tag.style.left = `${mousePos.x}px`;
         tag.style.top = `${mousePos.y}px`;
@@ -693,6 +885,7 @@ const MandalaRenderer = (() => {
     start,
     stop,
     triggerImpulse,
+    triggerMegaImpulse,
     onThemeChanged,
     setPaused(p) { _paused = !!p; _lastTs = 0; return _paused; },
     get paused() { return _paused; },
@@ -712,8 +905,12 @@ const InteractionCtrl = (() => {
 
   let _cachedRect = null;
   let _rectDirty = true;
+  let _isDown = false;
   let _pDownMoved = false;
   let _pDownX = 0, _pDownY = 0;
+  let _lastInputTs = -Infinity;   // last real pointer activity (ms, performance.now)
+  let _lastTapTs = 0;             // double-click / double-tap tracking
+  let _lastTapX = 0, _lastTapY = 0;
 
   function _getRect(canvas) {
     // C2: Re-read only when the layout has changed
@@ -743,12 +940,14 @@ const InteractionCtrl = (() => {
       mousePos.x = x;
       mousePos.y = y;
       mousePos.active = true;
+      _lastInputTs = performance.now();
       // Track significant movement to distinguish tap from drag
       const dx = x - _pDownX, dy = y - _pDownY;
       if (dx * dx + dy * dy > 25) _pDownMoved = true;
     }, { passive: true });
 
     canvas.addEventListener("pointerleave", () => {
+      _isDown = false;
       mousePos.active = false;
       const tag = document.getElementById("freqTag");
       if (tag) tag.style.opacity = "0";
@@ -757,19 +956,42 @@ const InteractionCtrl = (() => {
     canvas.addEventListener("pointerdown", e => {
       // Capture ensures pointermove/up fire even if pointer leaves canvas
       try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* Safari may throw */ }
+      _isDown = true;
       _pDownMoved = false;
       const { x, y } = _coords(e, canvas);
       _pDownX = x; _pDownY = y;
+      _lastInputTs = performance.now();
       mousePos.x = x; mousePos.y = y; mousePos.active = true;
     });
 
     canvas.addEventListener("pointerup", e => {
+      _isDown = false;
       if (!_pDownMoved) {
-        // Tap or click (not a drag) — fire acoustic impulse
         const { x, y } = _coords(e, canvas);
-        MandalaRenderer.triggerImpulse(x, y);
+        const now = performance.now();
+        const dtTap = now - _lastTapTs;
+        const dxTap = x - _lastTapX, dyTap = y - _lastTapY;
+
+        // Double-click/tap (< 300ms, close spatial proximity) triggers mega impulse
+        if (dtTap > 0 && dtTap < 300 && (dxTap * dxTap + dyTap * dyTap < 35 * 35)) {
+          MandalaRenderer.triggerMegaImpulse(x, y);
+          _lastTapTs = 0; // reset so 3rd click starts fresh
+        } else {
+          // Single tap/click — fire regular acoustic impulse
+          MandalaRenderer.triggerImpulse(x, y);
+          _lastTapTs = now;
+          _lastTapX = x;
+          _lastTapY = y;
+        }
       }
       try { canvas.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      _isDown = false;
+      mousePos.active = false;
+      const tag = document.getElementById("freqTag");
+      if (tag) tag.style.opacity = "0";
     });
 
     // ── Collapsible deck ──
@@ -819,19 +1041,46 @@ const InteractionCtrl = (() => {
           e.target.setAttribute("aria-valuetext", `${e.target.value} harmonic steps`);
         } else if (key === "resonance") {
           e.target.setAttribute("aria-valuetext", `${e.target.value}% turbulence`);
+        } else if (key === "autoPulse") {
+          const v = parseInt(e.target.value, 10);
+          e.target.setAttribute("aria-valuetext", v === 0 ? "Off" : `Level ${v}`);
+          try { localStorage.setItem(AUTO_PULSE_STORAGE_KEY, String(v)); } catch (_) { /* ignore */ }
         }
 
         const badge = document.getElementById(`${e.target.id}-val`);
-        if (badge) badge.textContent = e.target.value;
+        if (badge) badge.textContent = key === "autoPulse" && e.target.value === "0" ? "Off" : e.target.value;
       });
     });
+
+    // Reflect the persisted Auto Pulse level in the UI
+    const autoSlider = document.getElementById("autoSlider");
+    if (autoSlider) {
+      autoSlider.value = state.autoPulse;
+      autoSlider.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    // Reflect the persisted Shockwaves checkbox in the UI
+    const shockwavesCheckbox = document.getElementById("shockwavesCheckbox");
+    if (shockwavesCheckbox) {
+      shockwavesCheckbox.checked = !!state.shockwaves;
+      shockwavesCheckbox.addEventListener("change", e => {
+        state.shockwaves = e.target.checked;
+        try { localStorage.setItem(SHOCKWAVES_STORAGE_KEY, String(state.shockwaves)); } catch (_) { /* ignore */ }
+      });
+    }
 
     document.getElementById("genreSelect")?.addEventListener("change", e => {
       state.genre = e.target.value;
     });
   }
 
-  return { init, mousePos, invalidateRect: () => { _rectDirty = true; } };
+  return {
+    init,
+    mousePos,
+    get lastInputTs() { return _lastInputTs; },
+    get isDown() { return _isDown; },
+    invalidateRect: () => { _rectDirty = true; }
+  };
 })();
 
 // ============================================================

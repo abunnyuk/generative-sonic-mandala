@@ -82,7 +82,7 @@
         tabindex="-1": the canvas is never a focus stop; keys are handled globally by HudCtrl.
       -->
       <canvas id="mandalaCanvas" tabindex="-1" role="img"
-        aria-label="Generative sonic mandala — interactive radial waveform visualization. Click or tap to emit an acoustic impulse, hover to inspect frequency bands.">
+        aria-label="Generative sonic mandala — interactive radial waveform visualization. Click or tap to emit an acoustic impulse, double-click for a mega impulse, hover to inspect frequency bands.">
       </canvas>
       <div id="freqTag" class="canvas-overlay-tag" style="opacity: 0" aria-hidden="true"></div>
     </div>
@@ -140,6 +140,24 @@
                 aria-valuetext="45% turbulence" />
               <div id="resonanceSlider-val" class="lumi-slider-value" aria-hidden="true">45</div>
             </div>
+          </div>
+
+          <div class="control-item">
+            <label class="control-label" for="autoSlider">Auto Pulse</label>
+            <div class="lumi-slider-container">
+              <input type="range" id="autoSlider" class="lumi-slider" data-key="autoPulse" min="0" max="10" step="1"
+                value="0" style="--progress: 0%" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"
+                aria-valuetext="Off" />
+              <div id="autoSlider-val" class="lumi-slider-value" aria-hidden="true">Off</div>
+            </div>
+          </div>
+
+          <div class="control-item control-item--checkbox">
+            <label class="lumi-checkbox-label" for="shockwavesCheckbox">
+              <input type="checkbox" id="shockwavesCheckbox" class="lumi-checkbox" data-key="shockwaves"
+                aria-label="Toggle impulse shockwave rings" />
+              <span>Shockwaves</span>
+            </label>
           </div>
         </div>
       </div>
