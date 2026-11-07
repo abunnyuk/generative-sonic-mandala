@@ -96,6 +96,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun clearMediaAudioRouting() {
+        if (!isTv) return
+        try {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                audioManager.clearCommunicationDevice()
+            }
+        } catch (_: Throwable) {
+            // Non-fatal if platform policy restricts audio routing changes
+        }
+    }
+
     private val audioPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             val request = pendingRequest
@@ -194,6 +206,10 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         webView.onResume()
         enforceMediaAudioRouting()
+    }
+    override fun onStop() {
+        super.onStop()
+        clearMediaAudioRouting()
     }
 
     override fun onDestroy() {
