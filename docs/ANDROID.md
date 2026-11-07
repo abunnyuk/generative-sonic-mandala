@@ -57,6 +57,9 @@ To reset the permission while testing: `adb shell pm revoke com.generative.manda
 
 To view WebView console output: `adb logcat chromium:I *:S`.
 
+> [!TIP]
+> **Testing on Android TV / Google TV**: For testing on large-screen TV targets (such as the Philips 77OLED809 4K OLED TV), see the [Device Profile & TV Sideloading Guide](devices/philips-77oled809.md#3-developer-workflow-sideloading--remote-debugging) for wireless ADB setup, 120Hz rendering tips, and D-pad remote navigation instructions.
+
 ## 4. Create a signing key (one time)
 
 Release builds must be signed to be installable outside of debug mode. Create a keystore and **keep it somewhere safe and out of the repository**. If you lose it you cannot ship updates under the same signature.

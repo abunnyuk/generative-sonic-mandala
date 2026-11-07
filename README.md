@@ -49,6 +49,7 @@ Modern browsers require a secure origin (`localhost` or `https://`) to grant mic
 ├── .vscode/              # Shared editor settings
 ├── android/              # Native Android (Kotlin + WebView) wrapper
 ├── docs/
+│   ├── devices/          # Target hardware & device profiles (e.g. Philips 77OLED809 TV)
 │   ├── ANDROID.md        # Build, sign, and publish the Android app
 │   └── CI.md             # GitHub Actions workflows & release process
 ├── src/                  # The web app (single source of truth, also bundled into the APK)
