@@ -144,7 +144,7 @@ const HardwareProfile = (() => {
 
     // 3. User-Agent & Environment Heuristics (for TV browsers / sideloaded web)
     const ua = navigator.userAgent || "";
-    const isTvUa = /TV|GoogleTV|Android TV|SmartTV|Large Screen|CrKey/i.test(ua);
+    const isTvUa = /\bTV\b|GoogleTV|Android TV|SmartTV/i.test(ua);
     const isPhilips = /Philips|TPVision|TPV/i.test(ua);
     const isOled = /OLED/i.test(ua);
 

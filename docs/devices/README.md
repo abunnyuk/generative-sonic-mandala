@@ -75,7 +75,7 @@ To prevent scattered device checks across rendering loops and audio controllers,
    * `https://localhost:8000/?profile=philips-oled`
    * `https://localhost:8000/?profile=android-tv&dpr=1.0`
 2. **Native Android Bridge (`window.DeviceProfile`)**: Populated by `MainActivity.kt` using `FEATURE_LEANBACK`, `UI_MODE_TYPE_TELEVISION`, `Build.MANUFACTURER`, and `Build.MODEL`.
-3. **User-Agent & Environment Heuristics**: Fallback detection for TV browsers or sideloaded web runtimes (`/TV|GoogleTV|Android TV|SmartTV|Large Screen/i`).
+3. **User-Agent & Environment Heuristics**: Fallback detection for TV browsers or sideloaded web runtimes (`/\bTV\b|GoogleTV|Android TV|SmartTV/i`).
 4. **Default Profile**: Standard desktop and mobile settings.
 
 ### Adding a Future Hardware Profile
