@@ -91,11 +91,14 @@ The native 120Hz panel cuts the frame time budget from 16.67ms (60Hz) down to **
 
 1. **Delta-Time Normalization (`dt60`)**:
    * The physics simulation and particle integration in `src/js/app.js` normalize elapsed time via `dt60 = elapsed / (1000 / 60)`.
-   * On a 120Hz display, `requestAnimationFrame` fires every ~8.33ms (`dt60 ≈ 0.5`). The math must cleanly scale velocities, harmonic wave rotation, and particle decay per frame without speeding up or slowing down motion.
-2. **Canvas DPI and Viewport Constraints**:
-   * The physical panel is 3840 x 2160, but the Android TV WebView typically exposes a logical CSS viewport of 1920 x 1080 with a `window.devicePixelRatio` of 1.5 or 2.0.
-   * Rendering a 2D canvas at full uncompressed 3840x2160 with hundreds of glowing particle paths, radial gradients, and composite blend modes on a TV SoC GPU (e.g., MediaTek Pentonic series) can cause dropped frames.
-   * *Best Practice*: Cap the maximum canvas backing resolution DPR to `1.5` or `1.0` if frame drops occur, decoupling rendering resolution from the 77" display layout.
+   * On a 120Hz display, `requestAnimationFrame` fires every ~8.33ms (`dt60 ≈ 0.5`). The math cleanly scales velocities, harmonic wave rotation, and particle decay per frame without speeding up or slowing down motion.
+2. **Canvas DPI and Viewport Constraints (Dynamic DPR 1.0 Capping)**:
+   * The physical panel is 3840 x 2160, but the Android TV WebView exposes a logical CSS viewport of 1920 x 1080 with a `window.devicePixelRatio` of 1.5 or 2.0.
+   * Rendering a 2D canvas at full uncompressed 3840x2160 with hundreds of glowing particle paths, radial gradients, and composite blend modes on a TV SoC GPU (MediaTek Pentonic 1000 / ARM Mali-G57 MC2) causes GPU fillrate bottlenecks and dropped frames.
+   * *Implementation*: `HardwareProfile` detects the TV via the native Android `DeviceBridge` (or UA heuristics) and caps backing canvas DPR to `1.0` (`maxDpr: 1.0`). This keeps canvas backing at 1920x1080 (a 4x fillrate reduction vs 4K), allowing the TV's hardware upscaler to project the image onto the 77" screen smoothly.
+3. **Particle Budget & Zero-GC Theme Caching**:
+   * To fit comfortably inside the 8.33ms budget at 120Hz, the `philips-oled` profile applies a `particleBudget` of `0.50` (50% particle density), reducing per-frame draw calls.
+   * Particle theme styles (`fillStyleDark`, `fillStyleLight`) are precomputed at initialization, completely eliminating runtime string allocations and V8 Garbage Collection micro-stutters during 120Hz playback.
 
 ---
 
@@ -124,10 +127,14 @@ The audio system consists of 70W RMS output in a 2.1 arrangement (4 x 10W mid-hi
 1. **Sub-Bass Harmonic Band (55Hz)**:
    * The app includes a dedicated Sub-Bass harmonic preset centered at 55Hz.
    * The 30W integrated subwoofer reproduces low frequencies down to ~40–60Hz, allowing the room to physically resonate with the visual pulse when music is played in the room.
-2. **Microphone Capture via Android WebView**:
-   * Capturing ambient room audio requires the `RECORD_AUDIO` permission in `AndroidManifest.xml` and an explicit `navigator.mediaDevices.getUserMedia({ audio: true })` call.
-   * On Google TV, the microphone may reside on the Bluetooth voice remote or an attached USB conference/webcam mic.
-   * *Note*: Google Assistant hotword listening may temporarily hold or arbitrate microphone access; the app should handle microphone stream interruptions or muting gracefully.
+2. **Microphone Capture & HDMI eARC Preservation**:
+   * Capturing ambient room audio requires the `RECORD_AUDIO` permission in `AndroidManifest.xml` and an explicit `navigator.mediaDevices.getUserMedia(...)` call.
+   * *AEC & Audio Routing Pitfall*: When Chromium's `getUserMedia` requests default audio, it enables Acoustic Echo Cancellation (AEC) and switches Android's audio system to `MODE_IN_COMMUNICATION`. On Android TV OS, communication audio is hardwired to route exclusively to internal TV speakers, causing external HDMI eARC/ARC AV receiver connections to disconnect.
+   * *Resolution*:
+     * **Web Layer**: `HardwareProfile.current.audioConstraints` passes explicit raw constraints (`echoCancellation: false`, `noiseSuppression: false`, `autoGainControl: false`), preventing Chromium from requesting VoIP communication mode and preserving full-fidelity audio for FFT analysis.
+     * **Native Layer**: In `MainActivity.kt`, granting audio capture enforces `audioManager.mode = AudioManager.MODE_NORMAL` and explicitly selects HDMI audio endpoints on Android 12+ (`setCommunicationDevice`), ensuring TV audio remains routed over HDMI eARC to the external AV receiver.
+   * On Google TV, the microphone may reside on an attached USB conference/webcam mic or external audio interface.
+   * *Note*: Google Assistant hotword listening may temporarily hold or arbitrate microphone access; the app handles microphone stream interruptions gracefully.
 
 ---
 
@@ -227,3 +234,7 @@ Alternatively, connect a laptop or desktop with an HDMI 2.1 cable to HDMI Port 1
 | **Microphone Permission** | Runtime `RECORD_AUDIO` request for Web Audio FFT | Implemented (`android/`) |
 | **Leanback Launcher** | Android TV launcher banner and category filter | Documented in TV roadmap |
 | **120Hz Frame Budget** | Delta-time normalization (`dt60`) | Implemented |
+| **Hardware Profile Bridge** | `DeviceBridge` exposed to WebView with TV/OLED profile detection | Implemented (`android/` & `src/js/app.js`) |
+| **DPR 1.0 Backbuffer Capping** | Backing canvas capped at 1080p on TV to prevent 4K GPU fillrate saturation | Implemented (`src/js/app.js`) |
+| **HDMI eARC Audio Output** | Enforces `MODE_NORMAL` and raw audio constraints so mic capture preserves AV receiver sink | Implemented (`android/` & `src/js/app.js`) |
+| **Zero-GC Particle Caching** | Precomputed theme styles eliminate GC pauses during 120Hz playback | Implemented (`src/js/app.js`) |

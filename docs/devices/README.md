@@ -52,3 +52,54 @@ When evaluating or onboarding a target device, consider the following technical 
 ### 5. Ambient Immersion
 
 * **Perimeter Lighting**: Integrated bias lighting (e.g., 3-sided Philips Ambilight) reacting to edge canvas colors or music modes.
+
+---
+
+## Hardware Profile Registry Architecture
+
+To prevent scattered device checks across rendering loops and audio controllers, the application utilizes a declarative **Hardware Profile Registry** (`HARDWARE_PROFILES` in `src/js/app.js`).
+
+### Active Profiles
+
+| Profile ID | Target Environment | `maxDpr` | `particleBudget` | Audio Constraints | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `philips-oled` | Philips 77OLED809 / TP Vision OLED | `1.0` | `0.50` | Raw (AEC/AGC off) | Prevents 4K fillrate saturation, preserves HDMI eARC |
+| `android-tv` | Generic Android TV / Google TV | `1.0` | `0.55` | Raw (AEC/AGC off) | 1080p canvas buffer, stable 60/120Hz frame pacing |
+| `default` | Desktop Browsers & High-End Mobile | `2.5` | `0.70` | Raw (AEC/AGC off) | Uncapped high-DPI rendering |
+
+### How Hardware Profiles Are Resolved
+
+`HardwareProfile.resolve()` evaluates hardware in priority order:
+
+1. **URL Query Override**: Developers can force any profile or DPR during browser testing:
+   * `https://localhost:8000/?profile=philips-oled`
+   * `https://localhost:8000/?profile=android-tv&dpr=1.0`
+2. **Native Android Bridge (`window.DeviceProfile`)**: Populated by `MainActivity.kt` using `FEATURE_LEANBACK`, `UI_MODE_TYPE_TELEVISION`, `Build.MANUFACTURER`, and `Build.MODEL`.
+3. **User-Agent & Environment Heuristics**: Fallback detection for TV browsers or sideloaded web runtimes (`/TV|GoogleTV|Android TV|SmartTV|Large Screen/i`).
+4. **Default Profile**: Standard desktop and mobile settings.
+
+### Adding a Future Hardware Profile
+
+To onboard a new device (e.g., Raspberry Pi, Meta Quest, or low-power tablet):
+
+1. **Add the profile definition to `HARDWARE_PROFILES` in `src/js/app.js`**:
+
+   ```javascript
+   "meta-quest": {
+     id: "meta-quest",
+     name: "Meta Quest VR Browser",
+     maxDpr: 1.25,
+     particleBudget: 0.60,
+     audioConstraints: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+   }
+   ```
+
+2. **Add matching heuristic to `HardwareProfile.resolve()`**:
+
+   ```javascript
+   if (/OculusBrowser|Quest/i.test(navigator.userAgent)) {
+     return Object.assign({}, HARDWARE_PROFILES["meta-quest"], { source: "ua-heuristic" });
+   }
+   ```
+
+3. *(Optional)* If the device runs through a native Android wrapper, update `suggestedProfile` in `MainActivity.kt`.

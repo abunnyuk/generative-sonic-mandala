@@ -74,6 +74,99 @@ function getCssVar(name) {
 }
 
 // ============================================================
+// HARDWARE PROFILE REGISTRY
+// Declarative configuration for hardware-specific constraints:
+// - maxDpr: caps backing canvas resolution (prevents 4K fill-rate saturation on TV SoCs)
+// - particleBudget: scales particle count to hit 120Hz/60Hz frame budgets
+// - audioConstraints: raw audio capture parameters avoiding VoIP AEC/AGC rerouting
+// ============================================================
+const HARDWARE_PROFILES = {
+  "philips-oled": {
+    id: "philips-oled",
+    name: "Philips 77OLED809 / TP Vision OLED",
+    maxDpr: 1.0,              // 1080p canvas buffer prevents Mali-G57 MC2 fillrate saturation
+    particleBudget: 0.50,     // 50% particles to reliably hit 8.33ms (120Hz) frame deadline
+    audioConstraints: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    trueBlackRequired: true,
+  },
+  "android-tv": {
+    id: "android-tv",
+    name: "Generic Android TV / Google TV",
+    maxDpr: 1.0,
+    particleBudget: 0.55,
+    audioConstraints: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    trueBlackRequired: false,
+  },
+  "default": {
+    id: "default",
+    name: "Standard Desktop & High-End Mobile",
+    maxDpr: 2.5,
+    particleBudget: 0.70,
+    audioConstraints: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    trueBlackRequired: false,
+  },
+};
+
+const HardwareProfile = (() => {
+  function _resolve() {
+    // 1. URL parameter override: ?profile=<id> or ?dpr=<number>
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const forcedProfile = params.get("profile");
+      if (forcedProfile && HARDWARE_PROFILES[forcedProfile]) {
+        const p = Object.assign({}, HARDWARE_PROFILES[forcedProfile]);
+        const forcedDpr = parseFloat(params.get("dpr"));
+        if (!isNaN(forcedDpr) && forcedDpr > 0) p.maxDpr = forcedDpr;
+        return p;
+      }
+    } catch (_) { /* ignore query parsing */ }
+
+    // 2. Native Android DeviceBridge via window.DeviceProfile
+    if (typeof window.DeviceProfile !== "undefined") {
+      try {
+        const suggested = window.DeviceProfile.getSuggestedProfile();
+        if (suggested && HARDWARE_PROFILES[suggested]) {
+          return Object.assign({}, HARDWARE_PROFILES[suggested], {
+            source: "native-bridge",
+            manufacturer: window.DeviceProfile.getManufacturer(),
+            model: window.DeviceProfile.getModel(),
+            isTv: window.DeviceProfile.isTv(),
+          });
+        }
+        if (window.DeviceProfile.isTv()) {
+          return Object.assign({}, HARDWARE_PROFILES["android-tv"], {
+            source: "native-bridge",
+            isTv: true,
+          });
+        }
+      } catch (_) { /* ignore bridge errors */ }
+    }
+
+    // 3. User-Agent & Environment Heuristics (for TV browsers / sideloaded web)
+    const ua = navigator.userAgent || "";
+    const isTvUa = /TV|GoogleTV|Android TV|SmartTV|Large Screen|CrKey/i.test(ua);
+    const isPhilips = /Philips|TPVision|TPV/i.test(ua);
+    const isOled = /OLED/i.test(ua);
+
+    if (isPhilips && isOled) {
+      return Object.assign({}, HARDWARE_PROFILES["philips-oled"], { source: "ua-heuristic", isTv: true });
+    }
+    if (isTvUa) {
+      return Object.assign({}, HARDWARE_PROFILES["android-tv"], { source: "ua-heuristic", isTv: true });
+    }
+
+    return Object.assign({}, HARDWARE_PROFILES["default"], { source: "default", isTv: false });
+  }
+
+  const current = _resolve();
+
+  return {
+    get current() { return current; },
+    get isTv() { return !!current.isTv || current.id === "philips-oled" || current.id === "android-tv"; },
+  };
+})();
+
+// ============================================================
 // FREQUENCY BAND DATA
 // ============================================================
 const FREQUENCY_BANDS = [
@@ -260,7 +353,12 @@ const AudioEngine = (() => {
     _enabling = true;
     const btn = document.getElementById("audioBtn");
     try {
-      _stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const audioConstraints = HardwareProfile.current.audioConstraints || {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      };
+      _stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: false });
       _ctx = new (window.AudioContext || window.webkitAudioContext)();
 
       // B3: resume covers both 'suspended' (Chrome autoplay policy) and
@@ -408,7 +506,6 @@ const MandalaRenderer = (() => {
   function _watchDPR() {
     const mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
     mq.addEventListener("change", () => {
-      _dpr = window.devicePixelRatio || 1;
       _resizeCanvas();
       _watchDPR();   // re-register for the next monitor move
     }, { once: true });
@@ -416,6 +513,8 @@ const MandalaRenderer = (() => {
 
   function _resizeCanvas() {
     if (!_canvas) return;
+    const maxDpr = HardwareProfile.current.maxDpr || 2.5;
+    _dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     const newW = Math.floor(_vW * _dpr);
     const newH = Math.floor(_vH * _dpr);
     if (_canvas.width !== newW || _canvas.height !== newH) {
@@ -459,9 +558,10 @@ const MandalaRenderer = (() => {
     _particles = [];
     const totalBands = FREQUENCY_BANDS.length;
     const bandStep = totalBands > 1 ? 0.72 / (totalBands - 1) : 0;
+    const budget = HardwareProfile.current.particleBudget || 0.7;
 
     FREQUENCY_BANDS.forEach((band, bandIdx) => {
-      const count = Math.floor(band.particleCount * 0.7);
+      const count = Math.floor(band.particleCount * budget);
       for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
         const baseTier = 0.2 + bandIdx * bandStep;
@@ -469,6 +569,13 @@ const MandalaRenderer = (() => {
         const hue = band.hueRange[0] + Math.random() * (band.hueRange[1] - band.hueRange[0]);
         const sat = 85 + Math.random() * 15;
         const lum = 55 + Math.random() * 25;
+        const alpha = 0.4 + Math.random() * 0.5;
+
+        // A8: Pre-build static theme fill strings to eliminate runtime string allocation & GC hitches
+        const fillDark = `hsla(${hue.toFixed(1)}, ${sat.toFixed(1)}%, ${lum.toFixed(1)}%, ${alpha.toFixed(2)})`;
+        const lightLum = Math.max(28, lum * 0.5);
+        const lightAlpha = Math.min(0.9, alpha * 1.15);
+        const fillLight = `hsla(${hue.toFixed(1)}, ${sat.toFixed(1)}%, ${lightLum.toFixed(1)}%, ${lightAlpha.toFixed(2)})`;
 
         _particles.push({
           bandId: band.id,
@@ -481,12 +588,12 @@ const MandalaRenderer = (() => {
           hue: hue,
           sat: sat,
           lum: lum,
-          alpha: 0.4 + Math.random() * 0.5,
+          alpha: alpha,
           seed: Math.random() * 1000,
           burstVelocity: 0,
           burstAngle: 0,
-          // A8: Pre-built fill string prefix; hue+sat never change per particle
-          _fillBase: `hsla(${hue.toFixed(1)}, ${sat.toFixed(1)}%,`,
+          fillStyleDark: fillDark,
+          fillStyleLight: fillLight,
         });
       }
     });
@@ -759,10 +866,8 @@ const MandalaRenderer = (() => {
       _ctx.beginPath();
       _ctx.arc(px, py, dynamicSize, 0, Math.PI * 2);
 
-      const pLum = _isLight ? Math.max(28, p.lum * 0.5) : p.lum;
-      const pAlpha = _isLight ? Math.min(0.9, p.alpha * 1.15) : p.alpha;
-      // A8: Only the two varying numbers are concatenated; prefix is pre-built
-      _ctx.fillStyle = `${p._fillBase}${pLum.toFixed(1)}%, ${pAlpha.toFixed(2)})`;
+      // A8: Static precomputed theme fill style eliminates GC allocations per frame
+      _ctx.fillStyle = _isLight ? p.fillStyleLight : p.fillStyleDark;
       _ctx.fill();
     });
 
@@ -863,7 +968,6 @@ const MandalaRenderer = (() => {
         _vW = entry.contentRect.width || _canvas.parentElement.clientWidth || 600;
         _vH = entry.contentRect.height || _canvas.parentElement.clientHeight || 380;
       }
-      _dpr = window.devicePixelRatio || 1;
       _resizeCanvas();
       if (typeof InteractionCtrl !== "undefined" && InteractionCtrl.invalidateRect) {
         InteractionCtrl.invalidateRect();
