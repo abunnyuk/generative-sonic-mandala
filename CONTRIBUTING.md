@@ -17,14 +17,56 @@ When writing or modifying code, keep the following core constraints in mind:
 - **Multi-Input Ergonomics:** The application supports pointer, touch, and D-pad/remote controller input (such as Google TV key codes). All user-facing components must support standard spatial focus and keyboard navigation without relying exclusively on hover states or continuous pointer events.
 - **Render Performance:** Audio analysis and generative rendering run continuously on animation frames. Avoid operations that trigger layout reflows, garbage collection spikes, or canvas context resets during the render loop.
 
+### Commit & Pull Request Conventions
+
+We use [Conventional Commits](https://www.conventionalcommits.org/) to automatically manage versioning and releases via Release Please.
+
+Please format your PR titles (which become squash-commit messages) as:
+`<type>(<optional scope>): <description>`
+
+#### Release-Triggering Types
+
+- `feat:` Adds a new user-facing feature or capability (bumps **MINOR**, e.g. `1.0.0` → `1.1.0`).
+- `fix:` Fixes a bug in the application (bumps **PATCH**, e.g. `1.0.0` → `1.0.1`).
+- `perf:` Improves runtime performance without changing behavior (bumps **PATCH**).
+- Append `!` or add `BREAKING CHANGE:` in the body for breaking changes (bumps **MAJOR**, e.g. `1.0.0` → `2.0.0`).
+
+#### Non-Releasing Types (Do NOT trigger releases)
+
+- `docs:` Documentation-only changes (README, docs/, code comments).
+- `chore:` Tooling, dependency maintenance, git configuration.
+- `ci:` GitHub Actions workflow and CI script updates.
+- `refactor:` Code reorganization that neither fixes a bug nor adds a feature.
+- `test:` Adding or updating tests or verification scripts.
+- `style:` Whitespace, formatting, or linting fixes that do not change code logic.
+
+#### Common Scopes
+
+Scopes are optional but encouraged when changes are contained:
+
+- `canvas`: Waveform math, particle physics, shaders, and 2D canvas rendering.
+- `audio`: Web Audio API, FFT analyzer, microphone capture, and eARC routing.
+- `hud`: Controls deck, spatial navigation, focus lifecycle (`inert`), and theming.
+- `android`: Native Kotlin wrapper, WebView bridge, manifest, and Gradle builds.
+- `tv`: Android TV / Google TV optimizations, D-pad ergonomics, and remote key handling.
+- `docs`: Documentation, guides, and architectural notes.
+- `ci`: GitHub Actions workflows, Release Please, and validation scripts.
+
+#### Branch Naming
+
+We recommend prefixing branch names with the corresponding type (e.g. `feat/auto-pulse`, `fix/dpad-focus`, `perf/render-caching`, `docs/ci-guide`).
+
+> [!IMPORTANT]
+> If you are fixing a typo in documentation or updating a markdown file, use `docs:`, not `fix:`. Using `fix:` will trigger an unnecessary release.
+
 ## Development Workflow
 
-1. Fork the repository and create a feature branch from `main`:
+1. Fork the repository and create a branch from `main`:
 
    ```bash
-    git checkout main
-    git pull origin main
-    git checkout -b feature/your-feature-name
+   git checkout main
+   git pull origin main
+   git checkout -b <type>/your-branch-name
    ```
 
 2. Run the app locally by following the [Quick Start in the README](README.md#quick-start). Serve `src/` over `localhost` or `https://`; Web Audio microphone access requires a secure origin.
