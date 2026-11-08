@@ -49,19 +49,23 @@ flowchart TD
 | **Manual** | `workflow_dispatch` |
 
 ### Stage 1: Pre-Flight Validation
+
 - **`validate-pr`**: Enforces [Conventional Commits](https://www.conventionalcommits.org/) on PR titles and verifies internal branch names match `^(feat|fix|perf|docs|ci|chore|refactor|test|style)/.+`.
 - **`validate-web`**: Performs JavaScript syntax verification (`node --check src/js/app.js`) and documentation linting using `markdownlint-cli2`.
 - **`validate-android`**: Runs `./gradlew --no-daemon lintRelease` with Gradle caching.
 
 ### Stage 2: Security & Vulnerability Scanning
-- **`security-codeql`**: Runs CodeQL static analysis in parallel across both `javascript-typescript` and `java-kotlin`, fulfilling the repository's code quality ruleset.
-- **`security-dependencies`**: Evaluates dependency vulnerability diffs on pull requests.
+
+- **Code Scanning (CodeQL)**: Evaluates code quality and vulnerabilities natively via GitHub Advanced Security Default Setup, directly fulfilling repository ruleset requirements.
+- **`security-dependencies`**: Audits pull requests for dependency vulnerability diffs and supply-chain advisories.
 
 ### Stage 3: Parallel Build & Packaging
+
 - **`build-web`**: Packages and validates `src/` as a Pages deployment artifact.
 - **`build-android`**: Assembles debug and release APKs (`./gradlew --no-daemon assembleDebug assembleRelease`) and uploads them as the `sonic-mandala-android` artifact.
 
 ### Stage 4: Continuous Deployment
+
 - **`deploy-pages`**: Deploys the web application to GitHub Pages. Executes **only** on push to `main` after all prior validation and packaging stages pass.
 
 ---

@@ -83,3 +83,4 @@ jobs:
       - name: Attach APK to GitHub Release
         run: |
           gh release upload "${{ needs.release-please.outputs.tag_name }}" dist/*.apk --clobber
+

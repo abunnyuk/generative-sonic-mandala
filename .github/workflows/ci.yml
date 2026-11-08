@@ -99,53 +99,6 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon lintRelease
 
-  security-codeql:
-    name: CodeQL (${{ matrix.language }})
-    if: github.event_name != 'pull_request' || github.event.action != 'edited'
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
-      actions: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: javascript-typescript
-            build-mode: none
-          - language: java-kotlin
-            build-mode: manual
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Java (Kotlin build)
-        if: matrix.language == 'java-kotlin'
-        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Setup Gradle (Kotlin build)
-        if: matrix.language == 'java-kotlin'
-        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@096a89ea781ad15884828b1490898d6948bd1605 # v3.39.3
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-
-      - name: Compile Kotlin Sources
-        if: matrix.language == 'java-kotlin'
-        working-directory: android
-        run: ./gradlew --no-daemon compileDebugSources
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@096a89ea781ad15884828b1490898d6948bd1605 # v3.39.3
-        with:
-          category: "/language:${{ matrix.language }}"
-
   security-dependencies:
     name: Dependency Review
     if: github.event_name == 'pull_request' && github.event.action != 'edited'
