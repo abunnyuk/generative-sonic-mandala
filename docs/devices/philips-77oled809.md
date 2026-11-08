@@ -96,9 +96,9 @@ The native 120Hz panel cuts the frame time budget from 16.67ms (60Hz) down to **
    * The physical panel is 3840 x 2160, but the Android TV WebView exposes a logical CSS viewport of 1920 x 1080 with a `window.devicePixelRatio` of 1.5 or 2.0.
    * Rendering a 2D canvas at full uncompressed 3840x2160 with hundreds of glowing particle paths, radial gradients, and composite blend modes on a TV SoC GPU (MediaTek Pentonic 1000 / ARM Mali-G57 MC2) causes GPU fillrate bottlenecks and dropped frames.
    * *Implementation*: `HardwareProfile` detects the TV via the native Android `DeviceBridge` (or UA heuristics) and caps backing canvas DPR to `1.0` (`maxDpr: 1.0`). This keeps canvas backing at 1920x1080 (a 4x fillrate reduction vs 4K), allowing the TV's hardware upscaler to project the image onto the 77" screen smoothly.
-3. **Particle Budget & Zero-GC Theme Caching**:
+3. **Particle Budget & Particle Theme Caching**:
    * To fit comfortably inside the 8.33ms budget at 120Hz, the `philips-oled` profile applies a `particleBudget` of `0.50` (50% particle density), reducing per-frame draw calls.
-   * Particle theme styles (`fillStyleDark`, `fillStyleLight`) are precomputed at initialization, completely eliminating runtime string allocations and V8 Garbage Collection micro-stutters during 120Hz playback.
+   * Particle theme styles (`fillStyleDark`, `fillStyleLight`) are precomputed at initialization, providing reduced particle-style allocations through caching during 120Hz playback.
 
 ---
 
@@ -237,4 +237,4 @@ Alternatively, connect a laptop or desktop with an HDMI 2.1 cable to HDMI Port 1
 | **Hardware Profile Bridge** | `DeviceBridge` exposed to WebView with TV/OLED profile detection | Implemented (`android/` & `src/js/app.js`) |
 | **DPR 1.0 Backbuffer Capping** | Backing canvas capped at 1080p on TV to prevent 4K GPU fillrate saturation | Implemented (`src/js/app.js`) |
 | **HDMI eARC Audio Output** | Enforces `MODE_NORMAL` and raw audio constraints so mic capture preserves AV receiver sink | Implemented (`android/` & `src/js/app.js`) |
-| **Zero-GC Particle Caching** | Precomputed theme styles eliminate GC pauses during 120Hz playback | Implemented (`src/js/app.js`) |
+| **Particle Theme Caching** | Precomputed theme styles provide reduced particle-style allocations through caching during 120Hz playback | Implemented (`src/js/app.js`) |

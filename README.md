@@ -10,7 +10,7 @@ An interactive, audio-reactive radial waveform visualizer built with HTML5 Canva
 
 - **Audio-Reactive Visuals**: Real-time FFT frequency mapping responds dynamically to live microphone input.
 - **Polyrhythmic Frequency Bands**: Multi-genre harmonic presets ranging from Sub-Bass (55 Hz) to Kinetic Pop (880 Hz), each with distinct wave math and color palettes.
-- **Dynamic Particle Physics**: Responsive particle fields reacting to radial waveforms, acoustic impulses, and cursor proximity with zero runtime garbage collection pauses.
+- **Dynamic Particle Physics**: Responsive particle fields reacting to radial waveforms, acoustic impulses, and cursor proximity with reduced particle-style allocations through caching.
 - **Interactive Control Deck & Auto Pulse**: Real-time control over harmonics, turbulence, and genre focus, with an optional Shockwaves ring toggle. Includes an autonomous **Auto Pulse** wander mode designed for hands-free TV display that cooperatively yields to user touch, mouse, or D-pad input.
 - **Hardware-Adaptive Performance**: Automatic hardware profile detection for Smart TVs and mobile devices via native Android bridge and user-agent heuristics. Dynamically caps backbuffer resolution (1080p on TV SoCs) and particle budgets to ensure stable 60/120Hz frame pacing without compromising desktop high-DPI quality (see [Device Profiles](docs/devices/README.md)).
 - **Animation Controls**: Pause and resume the generative visualizer at any frame.

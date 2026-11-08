@@ -72,8 +72,8 @@ To prevent scattered device checks across rendering loops and audio controllers,
 `HardwareProfile.resolve()` evaluates hardware in priority order:
 
 1. **URL Query Override**: Developers can force any profile or DPR during browser testing:
-   * `https://localhost:8000/?profile=philips-oled`
-   * `https://localhost:8000/?profile=android-tv&dpr=1.0`
+   * `http://localhost:8000/?profile=philips-oled`
+   * `http://localhost:8000/?profile=android-tv&dpr=1.0`
 2. **Native Android Bridge (`window.DeviceProfile`)**: Populated by `MainActivity.kt` using `FEATURE_LEANBACK`, `UI_MODE_TYPE_TELEVISION`, `Build.MANUFACTURER`, and `Build.MODEL`.
 3. **User-Agent & Environment Heuristics**: Fallback detection for TV browsers or sideloaded web runtimes (`/\bTV\b|\bTV[-_]?(?:Stick|Box)|Google ?TV|Android ?TV|Smart ?TV/i`).
 4. **Default Profile**: Standard desktop and mobile settings.
