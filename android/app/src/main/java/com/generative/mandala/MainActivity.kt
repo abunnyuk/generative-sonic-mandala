@@ -2,9 +2,16 @@ package com.generative.mandala
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.UiModeManager
+import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -25,13 +32,91 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var pendingRequest: PermissionRequest? = null
 
+    private val isTv: Boolean by lazy {
+        val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+        val isTvUi = uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
+        val hasLeanback = packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+        val hasTelevision = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION)
+        isTvUi || hasLeanback || hasTelevision
+    }
+
+    private val isPhilipsOled: Boolean by lazy {
+        val vendor = "${Build.MANUFACTURER} ${Build.BRAND}".lowercase()
+        val model = Build.MODEL.lowercase()
+        (vendor.contains("philips") || vendor.contains("tp vision") || vendor.contains("tpv")) &&
+            (model.contains("oled") || model.contains("809"))
+    }
+
+    private val suggestedProfile: String by lazy {
+        when {
+            isPhilipsOled -> "philips-oled"
+            isTv -> "android-tv"
+            else -> "default"
+        }
+    }
+
+    inner class DeviceBridge {
+        @JavascriptInterface
+        fun getFormFactor(): String = if (isTv) "tv" else "mobile"
+
+        @JavascriptInterface
+        fun isTv(): Boolean = isTv
+
+        @JavascriptInterface
+        fun isPhilipsOled(): Boolean = isPhilipsOled
+
+        @JavascriptInterface
+        fun getManufacturer(): String = Build.MANUFACTURER
+
+        @JavascriptInterface
+        fun getModel(): String = Build.MODEL
+
+        @JavascriptInterface
+        fun getSuggestedProfile(): String = suggestedProfile
+    }
+
+    private fun enforceMediaAudioRouting() {
+        if (!isTv) return
+        try {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
+            // Enforce standard media mode so Android TV's audio policy does not drop HDMI eARC
+            audioManager.mode = AudioManager.MODE_NORMAL
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val hdmiDevice = audioManager.availableCommunicationDevices.firstOrNull {
+                    it.type == AudioDeviceInfo.TYPE_HDMI ||
+                    it.type == AudioDeviceInfo.TYPE_HDMI_ARC ||
+                    it.type == AudioDeviceInfo.TYPE_HDMI_EARC
+                }
+                if (hdmiDevice != null) {
+                    audioManager.setCommunicationDevice(hdmiDevice)
+                }
+            }
+        } catch (_: Throwable) {
+            // Non-fatal if platform policy restricts audio routing changes
+        }
+    }
+
+    private fun clearMediaAudioRouting() {
+        if (!isTv) return
+        try {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                audioManager.clearCommunicationDevice()
+            }
+        } catch (_: Throwable) {
+            // Non-fatal if platform policy restricts audio routing changes
+        }
+    }
+
     private val audioPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             val request = pendingRequest
             pendingRequest = null
             if (request == null) return@registerForActivityResult
-            if (granted) request.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
-            else request.deny()
+            if (granted) {
+                request.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+                enforceMediaAudioRouting()
+            } else request.deny()
         }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -56,6 +141,9 @@ class MainActivity : AppCompatActivity() {
             allowFileAccess = false
             allowContentAccess = false
         }
+
+        // Expose hardware profile bridge to the web layer
+        webView.addJavascriptInterface(DeviceBridge(), "DeviceProfile")
 
         // Serve bundled assets from a https origin => secure context => getUserMedia available.
         val assetLoader = WebViewAssetLoader.Builder()
@@ -84,6 +172,7 @@ class MainActivity : AppCompatActivity() {
                     ) == PackageManager.PERMISSION_GRANTED
                     if (granted) {
                         request.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
+                        enforceMediaAudioRouting()
                     } else {
                         pendingRequest?.deny()
                         pendingRequest = request
@@ -113,7 +202,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() { super.onPause(); webView.onPause() }
-    override fun onResume() { super.onResume(); webView.onResume() }
+    override fun onResume() {
+        super.onResume()
+        webView.onResume()
+        enforceMediaAudioRouting()
+    }
+    override fun onStop() {
+        super.onStop()
+        clearMediaAudioRouting()
+    }
 
     override fun onDestroy() {
         webView.destroy()

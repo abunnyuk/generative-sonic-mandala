@@ -10,14 +10,15 @@ An interactive, audio-reactive radial waveform visualizer built with HTML5 Canva
 
 - **Audio-Reactive Visuals**: Real-time FFT frequency mapping responds dynamically to live microphone input.
 - **Polyrhythmic Frequency Bands**: Multi-genre harmonic presets ranging from Sub-Bass (55 Hz) to Kinetic Pop (880 Hz), each with distinct wave math and color palettes.
-- **Dynamic Particle Physics**: Hundreds of responsive particles reacting to radial waveforms, acoustic impulses, and cursor proximity.
-- **Interactive Control Deck**: Fine-tune harmonic steps and turbulence, switch genre focus, and trigger acoustic ripples via click or tap. **Auto Pulse** (0–10, default off) adds a self-driving pointer that wanders smoothly across the whole mandala and emits ripples at organic intervals — handy on TV, where there is no mouse. Auto Pulse cooperatively yields to active user pointer interactions (mouse moves, clicks, and touches) and smoothly engages when the user is idle. An optional **Shockwaves** toggle (disabled by default for a smoother look) can be enabled to draw visual concentric ripple rings.
+- **Dynamic Particle Physics**: Responsive particle fields reacting to radial waveforms, acoustic impulses, and cursor proximity with reduced particle-style allocations through caching.
+- **Interactive Control Deck & Auto Pulse**: Real-time control over harmonics, turbulence, and genre focus, with an optional Shockwaves ring toggle. Includes an autonomous **Auto Pulse** wander mode designed for hands-free TV display that cooperatively yields to user touch, mouse, or D-pad input.
+- **Hardware-Adaptive Performance**: Automatic hardware profile detection for Smart TVs and mobile devices via native Android bridge and user-agent heuristics. Dynamically caps backbuffer resolution (1080p on TV SoCs) and particle budgets to ensure stable 60/120Hz frame pacing without compromising desktop high-DPI quality (see [Device Profiles](docs/devices/README.md)).
 - **Animation Controls**: Pause and resume the generative visualizer at any frame.
 - **Distraction-Free Auto-Hiding HUD**: Controls and cursor smoothly fade out during inactivity for an immersive, uninterrupted visual experience.
 - **OLED True Black Foundation**: True black (`#000000`) canvas clearing and styling designed to protect OLED displays against burn-in.
 - **Multi-Input & Spatial Navigation**: Comprehensive support for mouse, touch, keyboard, and TV remote D-pads (including Google TV / Android keycodes).
 - **Snapshot Export**: Export crisp high-resolution PNG captures directly from the canvas.
-- **Native Android App**: A WebView wrapper with runtime microphone permission, installable as an APK (see [Android App](#android-app)).
+- **Native Android & TV App**: A lightweight Kotlin WebView wrapper supporting runtime mic permissions, D-pad navigation, and automatic HDMI eARC audio preservation when running on Android TV / Google TV (see [Android App](#android-app)).
 - **Theme Support & Accessibility**: Dark, Light, and System themes, `prefers-reduced-motion` compliance, and full ARIA semantics.
 - **Zero Dependencies**: Lightweight vanilla JavaScript, CSS, and HTML with no build tools, bundlers, or npm packages required for the web app.
 
@@ -49,6 +50,7 @@ Modern browsers require a secure origin (`localhost` or `https://`) to grant mic
 ├── .vscode/              # Shared editor settings
 ├── android/              # Native Android (Kotlin + WebView) wrapper
 ├── docs/
+│   ├── devices/          # Target hardware & device profiles (e.g. Philips 77OLED809 TV)
 │   ├── ANDROID.md        # Build, sign, and publish the Android app
 │   └── CI.md             # GitHub Actions workflows & release process
 ├── src/                  # The web app (single source of truth, also bundled into the APK)
@@ -80,12 +82,12 @@ Modern browsers require a secure origin (`localhost` or `https://`) to grant mic
 
 ## Tech Stack
 
-- **Graphics**: HTML5 `<canvas>` 2D rendering with 60fps delta-time normalization, high-DPI (Retina) scaling, and OLED true-black clear states
-- **Audio**: Web Audio API (`AudioContext`, `AnalyserNode` FFT)
+- **Graphics**: HTML5 `<canvas>` 2D rendering with 60/120Hz delta-time normalization, hardware-adaptive DPI scaling, zero-GC particle styling, and OLED true-black clear states
+- **Audio**: Web Audio API (`AudioContext`, `AnalyserNode` FFT) with raw audio capture constraints
 - **Styling & Fonts**: CSS Custom Properties, Google Sans Flex & Google Sans Code
 - **Ergonomics & Navigation**: Auto-hiding HUD with focus lifecycle management (`inert`), cursor auto-suppression, and 2D spatial D-pad navigation
 - **Runtime**: 100% Vanilla JavaScript with zero external dependencies
-- **Android**: Kotlin, `WebView` + `WebViewAssetLoader`, Android Gradle Plugin 8.5, Gradle 9.7 (JDK 17)
+- **Android**: Kotlin, `WebView` + `WebViewAssetLoader`, hardware profile bridge (`window.DeviceProfile`), HDMI audio routing preservation, Android Gradle Plugin 8.5, Gradle 9.7 (JDK 17)
 
 ## Android App
 
@@ -95,7 +97,7 @@ A native Android wrapper (Kotlin + WebView, no Node required) lives in [`android
 cd android && ./gradlew assembleDebug   # requires JDK 17 + Android SDK 34
 ```
 
-See [docs/ANDROID.md](docs/ANDROID.md) for the full build, signing, and publishing guide, and [docs/CI.md](docs/CI.md) for the automated builds and releases.
+See [docs/ANDROID.md](docs/ANDROID.md) for the full build, signing, and publishing guide, and [docs/CI.md](docs/CI.md) for the automated builds and releases. For testing on large-screen Google TV / Android TV targets (such as the Philips 77OLED809 4K OLED TV), see the [Device Profiles Guide](docs/devices/README.md) for 120Hz performance tips and HDMI eARC audio routing notes.
 
 ## Contributing
 
