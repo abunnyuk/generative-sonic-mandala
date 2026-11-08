@@ -31,8 +31,13 @@ jobs:
     steps:
       - name: Validate Branch Name
         if: github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
-          BRANCH_NAME="${{ github.head_ref }}"
+          if [[ "$BRANCH_NAME" =~ ^release-please ]]; then
+            echo "Release Please branch detected ('$BRANCH_NAME'). Skipping branch name prefix validation."
+            exit 0
+          fi
           PATTERN="^(feat|fix|perf|docs|ci|chore|refactor|test|style)\/.+"
           if [[ ! "$BRANCH_NAME" =~ $PATTERN ]]; then
             echo "::error::Branch name '$BRANCH_NAME' does not match the required pattern: $PATTERN"
@@ -65,7 +70,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "20"
 
@@ -73,7 +78,7 @@ jobs:
         run: node --check src/js/app.js
 
       - name: Lint Documentation
-        uses: DavidAnson/markdownlint-cli2-action@913db5cf77ef624b914090bad9e1615f7f6e099d # v25.0.0
+        uses: DavidAnson/markdownlint-cli2-action@696eb3f2509270d7b882d2aa68347bc676e7af34 # v25.0.0
         with:
           globs: "**/*.md"
 
@@ -109,7 +114,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: moderate
 
@@ -157,7 +162,7 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$KEYSTORE_B64" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          if [ -n "$KEYSTORE_B64" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
             echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.keystore"
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
             echo "SIGNED=true" >> "$GITHUB_ENV"
