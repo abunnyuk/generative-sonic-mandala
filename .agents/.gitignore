@@ -1,0 +1,2 @@
+# Spec Kit: ignore generated agent skill bindings across any tool directory
+skills/speckit*/

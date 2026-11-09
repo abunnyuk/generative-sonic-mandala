@@ -1,6 +1,9 @@
 {
   "config": {
     "no-inline-html": false,
-    "line-length": false
-  }
+    "line_length": false
+  },
+  "gitignore": true,
+
+  "ignores": [".specify/templates/**/*.md", "**/skills/speckit*/**/*.md"]
 }
