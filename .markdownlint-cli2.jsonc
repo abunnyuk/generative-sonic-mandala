@@ -3,8 +3,7 @@
     "no-inline-html": false,
     "line_length": false
   },
-  "fix": true,
   "gitignore": true,
 
-  "ignores": [".specify/templates/*"]
+  "ignores": [".specify/templates/**/*.md", "**/skills/speckit*/**/*.md"]
 }

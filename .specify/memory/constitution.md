@@ -71,8 +71,8 @@ Display preservation for emissive OLED/QD-OLED panels is non-negotiable.
 ## Development Workflow & Quality Gates
 
 - Dual-target verification: all changes MUST be verified against standalone web serving
-  (`npx serve src` or `python3 -m http.server`), and against debug Android APK builds whenever
-  wrapper code or bridge contracts are altered.
+  (`npx serve src` or `python3 -m http.server --directory src`), and against debug Android APK
+  builds whenever wrapper code or bridge contracts are altered.
 - Zero uncaught console exceptions and zero dropped frames under target device budgets.
 - Reviews MUST verify compliance with Principles I–V.
 
