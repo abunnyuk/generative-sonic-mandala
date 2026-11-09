@@ -2,5 +2,9 @@
   "config": {
     "no-inline-html": false,
     "line_length": false
-  }
+  },
+  "fix": true,
+  "gitignore": true,
+
+  "ignores": [".specify/templates/*"]
 }
